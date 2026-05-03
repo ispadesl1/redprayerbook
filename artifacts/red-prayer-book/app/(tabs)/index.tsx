@@ -166,11 +166,11 @@ const TILES: { icon: MCI; label: string; target: string }[] = [
 ];
 
 const CATEGORIES = [
-  { label: "Prayer for God's Will", slug: "will" },
-  { label: "A Prayer of Husband and Wife", slug: "marriage" },
-  { label: "A Prayer of Single Persons", slug: "single" },
-  { label: "A Prayer to Find a Spouse", slug: "spouse" },
-  { label: "A Prayer in Time of Trouble", slug: "trouble" },
+  { label: "Prayer for God's Will", slug: "morning-prayer-grant-me" },
+  { label: "A Prayer of Husband and Wife", slug: "for-married" },
+  { label: "A Prayer of Single Persons", slug: "for-single" },
+  { label: "Before Commencing Any Task", slug: "before-work" },
+  { label: "A Prayer in Time of Trouble", slug: "in-time-of-trouble" },
 ];
 
 export default function Home() {
