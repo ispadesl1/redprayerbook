@@ -35,7 +35,7 @@ artifacts/red-prayer-book/
 │   │   ├── index.tsx                # Home: Today's Prayer card, 2×3 quick tiles, prayer categories, badges
 │   │   ├── prayers.tsx              # Prayer Book — section-based TOC with expandable accordions, search
 │   │   ├── calendar.tsx             # Orthodox liturgical calendar (New/Old style)
-│   │   ├── bible.tsx                # Bible reader (John 1) with verse highlighting & commentary
+│   │   ├── bible.tsx                # Bible reader — full 3-view navigator (Books→Chapters→Reading), all 73 Orthodox canon books, live KJV fetch + cache
 │   │   └── you.tsx                  # Profile: streak, 8 badges + progress rings, activity feed
 │   ├── fasting.tsx                  # Fasting Calendar screen — Pascha countdown, all periods, one-day fasts, today's status
 │   ├── hours.tsx                    # Canonical Hours prayer screen — full Divine Office with hour selector, prev/next nav, share
@@ -71,7 +71,9 @@ artifacts/red-prayer-book/
 │   ├── pages.ts                     # Legacy prayer book page data (BookView)
 │   ├── prayers.ts                   # Full prayer data library — 12 sections, 70+ prayers, all real PDF content
 │   ├── audio.ts                     # Audio SFX stubs (expo-audio ready)
-│   └── calendar.ts                  # Orthodox calendar data + Julian/Gregorian shift
+│   ├── calendar.ts                  # Orthodox calendar data + Julian/Gregorian shift
+│   ├── bible-structure.ts           # All 73 Orthodox canon books in 9 sections (BIBLE_SECTIONS), helpers
+│   └── bible-fetch.ts               # fetchChapter() → bible-api.com KJV, AsyncStorage cache (rpb:bible:*)
 └── theme/
     ├── colors.ts                    # Brand color tokens
     ├── typography.ts                # Font scale
@@ -83,7 +85,7 @@ artifacts/red-prayer-book/
 - **Home Screen**: Today's Prayer hero card (Saint Nicholas icon + quote), 2×3 quick-action tiles with MaterialCommunityIcons, Prayer Categories list, badge progress preview
 - **Page-flip Prayer Book**: Swipe-to-turn pages with 3D perspective curl animation
 - **Orthodox Calendar**: Monthly grid, feast days, Old/New style toggle, tone of week, Sunday readings
-- **Bible Reader**: John 1 with verse long-press → highlight/copy/share/bookmark actions
+- **Bible Reader**: Full 3-view navigator — Books (all 73 Orthodox canon books, OT/NT toggle, deuterocanonical gold dots) → Chapters (grid) → Reading (live KJV from bible-api.com, AsyncStorage cache, animated skeleton, verse long-press → highlight/copy/share/bookmark, prev/next chapter dock)
 - **Fasting Calendar** (`lib/fasting.ts`, `app/fasting.tsx`): Full Orthodox fasting year computed dynamically from Julian Pascha (algorithm covers any year). Covers all major fasting periods (Publican & Pharisee fast-free, Cheese Week, Great Lent, Holy Week, Bright Week, Pentecost Week, Apostles' Fast, Dormition Fast, Nativity Fast, Christmas Season), three annual one-day fasts (Theophany Eve, Beheading of St. John, Elevation of the Cross), and weekly Wednesday/Friday fasts. `getTodayFastStatus()` returns the current fast label, strictness, rules, and progress. Home screen widget (below Canonical Hours) shows the current fast with a progress bar and taps through to the full screen. The full `/fasting` screen shows: today's hero card with rules + progress bar, Pascha date with countdown, annual one-day fasts list, and all yearly fasting periods as expandable accordion cards with strictness bars and date ranges. Calendar tab also shows a fasting banner below the month grid.
 - **Canonical Hours** (`lib/canonicalHours.ts`, `app/hours.tsx`): Full Orthodox Divine Office — 7 canonical hours (Midnight Office, Matins, First, Third, Sixth, Ninth Hour, Vespers) each with name, Greek name, time range, accent color, scripture verse, full liturgical prayer text in elevated English. Live home screen widget auto-detects the current hour (updates every 60s), shows the hour name, subtitle, Greek name, live clock, and short prayer snippet. Taps through to `app/hours.tsx` — a full-screen prayer reader with a horizontal hour selector strip, hero card with scripture + intention, full prayer text, prev/next navigation, share button.
 - **AI Spiritual Companion** (`app/companion.tsx`): Full-screen chat with "Father Seraphim" — an Orthodox spiritual guide powered by Claude via Anthropic API. SSE streaming responses, conversation history persisted to PostgreSQL, 6 suggestion prompts on welcome screen. Entry banner on "You" tab.
