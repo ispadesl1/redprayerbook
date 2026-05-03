@@ -4,11 +4,20 @@ type Bookmark = { id: string; page_index: number; label: string | null; created_
 type Highlight = { id: string; book: string; chapter: number; verse: number; color: string; created_at: number };
 export type PrayerIntention = { id: string; intention: string; prayerText: string; created_at: number };
 
+export type PrayerBookmark = {
+  id: string;
+  slug: string;
+  title: string;
+  sectionTitle: string;
+  created_at: number;
+};
+
 const KEYS = {
   bookmarks: 'rpb:bookmarks',
   highlights: 'rpb:highlights',
   streak: 'rpb:streak',
   prayerIntentions: 'rpb:prayer_intentions',
+  prayerBookmarks: 'rpb:prayer_bookmarks',
 };
 
 async function read<T>(key: string): Promise<T[]> {
@@ -92,4 +101,35 @@ export async function listPrayerIntentions(): Promise<PrayerIntention[]> {
 export async function deletePrayerIntention(id: string): Promise<void> {
   const list = await read<PrayerIntention>(KEYS.prayerIntentions);
   await write(KEYS.prayerIntentions, list.filter((p) => p.id !== id));
+}
+
+export async function listPrayerBookmarks(): Promise<PrayerBookmark[]> {
+  return read<PrayerBookmark>(KEYS.prayerBookmarks);
+}
+
+export async function isPrayerBookmarked(slug: string): Promise<boolean> {
+  const list = await read<PrayerBookmark>(KEYS.prayerBookmarks);
+  return list.some((b) => b.slug === slug);
+}
+
+export async function addPrayerBookmark(
+  slug: string,
+  title: string,
+  sectionTitle: string,
+): Promise<void> {
+  const list = await read<PrayerBookmark>(KEYS.prayerBookmarks);
+  if (list.some((b) => b.slug === slug)) return;
+  list.unshift({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    slug,
+    title,
+    sectionTitle,
+    created_at: Date.now(),
+  });
+  await write(KEYS.prayerBookmarks, list);
+}
+
+export async function removePrayerBookmark(slug: string): Promise<void> {
+  const list = await read<PrayerBookmark>(KEYS.prayerBookmarks);
+  await write(KEYS.prayerBookmarks, list.filter((b) => b.slug !== slug));
 }

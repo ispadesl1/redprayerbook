@@ -1,9 +1,20 @@
-import { ScrollView, View, Text, Pressable } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { ScrollView, View, Text, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import { spacing, radii } from '@/theme/spacing';
-import { getPrayerBySlug, Prayer, PRAYER_SECTIONS } from '@/lib/prayers';
+import {
+  getPrayerBySlug,
+  Prayer,
+  PRAYER_SECTIONS,
+} from '@/lib/prayers';
+import {
+  isPrayerBookmarked,
+  addPrayerBookmark,
+  removePrayerBookmark,
+} from '@/lib/db';
 
 function BackButton() {
   return (
@@ -77,9 +88,14 @@ function PrayerText({ text }: { text: string }) {
   return (
     <>
       {paragraphs.map((para, idx) => {
-        const isHeading = /^[A-Z]{4,}/.test(para.trim()) && para.length < 60;
-        const isDialogLine = /^(PRIEST|CHOIR|PEOPLE|READER|And the Priest|The Priest|Then|Meanwhile)/.test(para.trim());
-        const isItalicStage = para.trim().startsWith('(') && para.trim().endsWith(')');
+        const isHeading =
+          /^[A-Z]{4,}/.test(para.trim()) && para.length < 60;
+        const isDialogLine =
+          /^(PRIEST|CHOIR|PEOPLE|READER|And the Priest|The Priest|Then|Meanwhile)/.test(
+            para.trim(),
+          );
+        const isItalicStage =
+          para.trim().startsWith('(') && para.trim().endsWith(')');
 
         if (isHeading) {
           return (
@@ -131,10 +147,12 @@ function PrayerText({ text }: { text: string }) {
                     fontFamily: 'serif',
                     fontSize: 15,
                     color: /^(PRIEST|CHOIR|PEOPLE|READER)/.test(line.trim())
-                      ? colors.byzantineCrimson + 'FF'
+                      ? colors.martyrRed
                       : colors.textPrimary,
                     lineHeight: 24,
-                    fontWeight: /^(PRIEST|CHOIR|PEOPLE|READER)/.test(line.trim())
+                    fontWeight: /^(PRIEST|CHOIR|PEOPLE|READER)/.test(
+                      line.trim(),
+                    )
                       ? '700'
                       : '400',
                   }}
@@ -166,10 +184,9 @@ function PrayerText({ text }: { text: string }) {
   );
 }
 
-function ListContent({ items, rubric }: { items: string[]; rubric?: string }) {
+function ListContent({ items }: { items: string[] }) {
   return (
     <>
-      {rubric && <Rubric text={rubric} />}
       {items.map((item, idx) => (
         <View
           key={idx}
@@ -181,16 +198,16 @@ function ListContent({ items, rubric }: { items: string[]; rubric?: string }) {
         >
           <View
             style={{
-              width: 24,
-              height: 24,
-              borderRadius: 12,
+              width: 26,
+              height: 26,
+              borderRadius: 13,
               backgroundColor: 'rgba(212,175,55,0.15)',
               borderWidth: 1,
               borderColor: colors.hairline,
               alignItems: 'center',
               justifyContent: 'center',
               marginRight: spacing.s,
-              marginTop: 2,
+              marginTop: 1,
               flexShrink: 0,
             }}
           >
@@ -223,7 +240,7 @@ function ListContent({ items, rubric }: { items: string[]; rubric?: string }) {
 
 function SectionNavPills({ currentSlug }: { currentSlug: string }) {
   const section = PRAYER_SECTIONS.find((s) =>
-    s.prayers.some((p) => p.slug === currentSlug)
+    s.prayers.some((p) => p.slug === currentSlug),
   );
   if (!section || section.prayers.length <= 1) return null;
 
@@ -243,7 +260,9 @@ function SectionNavPills({ currentSlug }: { currentSlug: string }) {
       {currentIdx > 0 ? (
         <Pressable
           onPress={() =>
-            router.replace(`/prayers/${section.prayers[currentIdx - 1].slug}` as any)
+            router.replace(
+              `/prayers/${section.prayers[currentIdx - 1].slug}` as any,
+            )
           }
           style={({ pressed }) => ({
             flex: 1,
@@ -278,7 +297,9 @@ function SectionNavPills({ currentSlug }: { currentSlug: string }) {
       {currentIdx < section.prayers.length - 1 ? (
         <Pressable
           onPress={() =>
-            router.replace(`/prayers/${section.prayers[currentIdx + 1].slug}` as any)
+            router.replace(
+              `/prayers/${section.prayers[currentIdx + 1].slug}` as any,
+            )
           }
           style={({ pressed }) => ({
             flex: 1,
@@ -314,37 +335,41 @@ function SectionNavPills({ currentSlug }: { currentSlug: string }) {
   );
 }
 
-function BookPageBadge({ page }: { page: number }) {
-  return (
-    <View
-      style={{
-        alignSelf: 'flex-end',
-        backgroundColor: 'rgba(212,175,55,0.1)',
-        borderRadius: radii.pill,
-        paddingHorizontal: 10,
-        paddingVertical: 3,
-        borderWidth: 1,
-        borderColor: colors.hairline,
-        marginBottom: spacing.m,
-      }}
-    >
-      <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: 'serif' }}>
-        Book p. {page}
-      </Text>
-    </View>
-  );
-}
-
 export default function PrayerDetail() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const prayer = getPrayerBySlug(slug ?? '') ?? getPrayerBySlug('morning-trisagion')!;
+  const prayer =
+    getPrayerBySlug(slug ?? '') ?? getPrayerBySlug('morning-trisagion')!;
 
   const section = PRAYER_SECTIONS.find((s) =>
-    s.prayers.some((p) => p.slug === prayer.slug)
+    s.prayers.some((p) => p.slug === prayer.slug),
   );
 
+  const [bookmarked, setBookmarked] = useState(false);
+
+  useEffect(() => {
+    isPrayerBookmarked(prayer.slug).then(setBookmarked);
+  }, [prayer.slug]);
+
+  const toggleBookmark = useCallback(async () => {
+    if (bookmarked) {
+      await removePrayerBookmark(prayer.slug);
+      setBookmarked(false);
+    } else {
+      await addPrayerBookmark(
+        prayer.slug,
+        prayer.title,
+        section?.title ?? 'Prayer Book',
+      );
+      setBookmarked(true);
+    }
+  }, [bookmarked, prayer.slug, prayer.title, section?.title]);
+
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.surfaceDeep }}>
+    <SafeAreaView
+      edges={['top']}
+      style={{ flex: 1, backgroundColor: colors.surfaceDeep }}
+    >
+      {/* Header */}
       <View
         style={{
           flexDirection: 'row',
@@ -357,7 +382,9 @@ export default function PrayerDetail() {
         }}
       >
         <BackButton />
+
         <View style={{ flex: 1 }} />
+
         {section && (
           <View
             style={{
@@ -367,7 +394,7 @@ export default function PrayerDetail() {
               paddingVertical: 4,
               backgroundColor: section.color + '22',
               borderRadius: radii.pill,
-              marginRight: spacing.s,
+              marginRight: spacing.xs,
             }}
           >
             <Text style={{ fontSize: 12, marginRight: 4 }}>{section.icon}</Text>
@@ -383,6 +410,29 @@ export default function PrayerDetail() {
             </Text>
           </View>
         )}
+
+        {/* Bookmark button */}
+        <Pressable
+          onPress={toggleBookmark}
+          style={({ pressed }) => ({
+            padding: spacing.xs,
+            borderRadius: radii.m,
+            backgroundColor: pressed
+              ? 'rgba(212,175,55,0.15)'
+              : bookmarked
+              ? 'rgba(212,175,55,0.12)'
+              : 'transparent',
+            borderWidth: bookmarked ? 1 : 0,
+            borderColor: colors.hairline,
+          })}
+          accessibilityLabel={bookmarked ? 'Remove bookmark' : 'Add bookmark'}
+        >
+          <MaterialCommunityIcons
+            name={bookmarked ? 'bookmark' : 'bookmark-outline'}
+            size={22}
+            color={bookmarked ? colors.sacredGold : colors.textMuted}
+          />
+        </Pressable>
       </View>
 
       <ScrollView
@@ -392,6 +442,7 @@ export default function PrayerDetail() {
         }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Title card */}
         <View
           style={{
             borderWidth: 1,
@@ -415,7 +466,7 @@ export default function PrayerDetail() {
             {prayer.title}
           </Text>
 
-          {prayer.subtitle && (
+          {prayer.subtitle ? (
             <Text
               style={{
                 fontFamily: 'serif',
@@ -428,12 +479,41 @@ export default function PrayerDetail() {
             >
               {prayer.subtitle}
             </Text>
-          )}
+          ) : null}
 
-          {prayer.bookPage && (
+          {prayer.bookPage ? (
             <View style={{ alignItems: 'center', marginTop: spacing.s }}>
               <Text style={{ color: colors.textMuted, fontSize: 11 }}>
                 — p. {prayer.bookPage} —
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Bookmark hint */}
+          {bookmarked && (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: spacing.s,
+                gap: 4,
+              }}
+            >
+              <MaterialCommunityIcons
+                name="bookmark"
+                size={12}
+                color={colors.sacredGold}
+              />
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: colors.sacredGold,
+                  fontStyle: 'italic',
+                  opacity: 0.8,
+                }}
+              >
+                Saved to Bookmarks
               </Text>
             </View>
           )}
@@ -441,7 +521,7 @@ export default function PrayerDetail() {
 
         <GoldRule />
 
-        {prayer.rubric && <Rubric text={prayer.rubric} />}
+        {prayer.rubric ? <Rubric text={prayer.rubric} /> : null}
 
         {prayer.kind === 'list' && prayer.items ? (
           <ListContent items={prayer.items} />
