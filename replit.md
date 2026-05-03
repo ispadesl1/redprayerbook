@@ -33,7 +33,7 @@ artifacts/red-prayer-book/
 │   ├── (tabs)/
 │   │   ├── _layout.tsx              # 5-tab nav (Home, Prayers, Calendar, Bible, You) — MCI vector icons
 │   │   ├── index.tsx                # Home: Today's Prayer card, 2×3 quick tiles, prayer categories, badges
-│   │   ├── prayers.tsx              # Prayer Book with 3D page-flip reader
+│   │   ├── prayers.tsx              # Prayer Book — section-based TOC with expandable accordions, search
 │   │   ├── calendar.tsx             # Orthodox liturgical calendar (New/Old style)
 │   │   ├── bible.tsx                # Bible reader (John 1) with verse highlighting & commentary
 │   │   └── you.tsx                  # Profile: streak, 8 badges + progress rings, activity feed
@@ -43,7 +43,7 @@ artifacts/red-prayer-book/
 │   ├── settings.tsx                 # Settings sheet: notifications toggle, calendar style, about
 │   ├── bookmarks.tsx                # Saved bookmarks & Bible highlights
 │   ├── onboarding/[step].tsx        # 3-step onboarding
-│   ├── prayers/[slug].tsx           # Prayer detail modal
+│   ├── prayers/[slug].tsx           # Prayer detail — title card, rubric, paragraph/list/responsive renderers, in-section nav
 │   ├── intention.tsx                # Compose a Prayer: intention input → streamed Orthodox prayer → save/share
 │   └── saints/[id].tsx              # Saint detail modal
 ├── components/
@@ -68,7 +68,8 @@ artifacts/red-prayer-book/
 │   ├── db.ts                        # AsyncStorage persistence (bookmarks, highlights, streak)
 │   ├── badges.ts                    # 8 badge definitions + AsyncStorage progress tracking
 │   ├── notifications.ts             # Morning/evening notification scheduling (lazy expo-notifications)
-│   ├── pages.ts                     # Prayer book page data
+│   ├── pages.ts                     # Legacy prayer book page data (BookView)
+│   ├── prayers.ts                   # Full prayer data library — 12 sections, 70+ prayers, all real PDF content
 │   ├── audio.ts                     # Audio SFX stubs (expo-audio ready)
 │   └── calendar.ts                  # Orthodox calendar data + Julian/Gregorian shift
 └── theme/

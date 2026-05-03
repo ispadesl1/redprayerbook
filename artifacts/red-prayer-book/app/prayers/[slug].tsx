@@ -1,45 +1,347 @@
 import { ScrollView, View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { CrossDivider } from '@/components/ui/CrossDivider';
-import { FiligreeFrame } from '@/components/ui/FiligreeFrame';
 import { colors } from '@/theme/colors';
 import { spacing, radii } from '@/theme/spacing';
+import { getPrayerBySlug, Prayer, PRAYER_SECTIONS } from '@/lib/prayers';
 
-const PRAYERS: Record<string, { title: string; text: string }> = {
-  morning: {
-    title: 'Morning Prayer',
-    text: `O Lord, grant me to greet the coming day in peace. Help me in all things to rely upon Thy holy will. In every hour of the day reveal Thy will to me. Bless my dealings with all who surround me.
+function BackButton() {
+  return (
+    <Pressable
+      onPress={() => router.back()}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.xs,
+        paddingHorizontal: spacing.s,
+        borderRadius: radii.pill,
+        backgroundColor: pressed ? 'rgba(212,175,55,0.1)' : 'transparent',
+      })}
+    >
+      <Text style={{ color: colors.sacredGold, fontSize: 20, marginRight: 4 }}>‹</Text>
+      <Text style={{ color: colors.sacredGold, fontSize: 13, fontFamily: 'serif' }}>
+        Prayer Book
+      </Text>
+    </Pressable>
+  );
+}
 
-Teach me to treat all that comes to me throughout the day with peace of soul and with firm conviction that Thy will governs all. In all my deeds and words, guide my thoughts and feelings. In unexpected events, let me not forget that all are sent by Thee.
+function GoldRule() {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: spacing.m,
+      }}
+    >
+      <View style={{ flex: 1, height: 1, backgroundColor: colors.hairline }} />
+      <Text style={{ color: colors.sacredGold, fontSize: 12, marginHorizontal: spacing.s }}>
+        ✦
+      </Text>
+      <View style={{ flex: 1, height: 1, backgroundColor: colors.hairline }} />
+    </View>
+  );
+}
 
-Teach me to act firmly and wisely, without embittering and embarrassing others. Give me strength to bear the fatigue of the coming day with all that it shall bring. Direct my will, teach me to pray, and Thou, Thyself, pray in me.
+function Rubric({ text }: { text: string }) {
+  return (
+    <View
+      style={{
+        backgroundColor: 'rgba(139,14,26,0.18)',
+        borderLeftWidth: 2,
+        borderLeftColor: colors.byzantineCrimson,
+        borderRadius: radii.s,
+        paddingHorizontal: spacing.s,
+        paddingVertical: spacing.xs,
+        marginBottom: spacing.m,
+      }}
+    >
+      <Text
+        style={{
+          fontFamily: 'serif',
+          fontStyle: 'italic',
+          fontSize: 13,
+          color: colors.textSecondary,
+          lineHeight: 20,
+        }}
+      >
+        {text}
+      </Text>
+    </View>
+  );
+}
 
-Amen.`,
-  },
-  evening: {
-    title: 'Evening Prayer',
-    text: `O Lord our God, in whom we believe and whose name we invoke above every other name: grant us, as we go to our rest, refreshment of body and soul.
+function PrayerText({ text }: { text: string }) {
+  const paragraphs = text.split('\n\n');
+  return (
+    <>
+      {paragraphs.map((para, idx) => {
+        const isHeading = /^[A-Z]{4,}/.test(para.trim()) && para.length < 60;
+        const isDialogLine = /^(PRIEST|CHOIR|PEOPLE|READER|And the Priest|The Priest|Then|Meanwhile)/.test(para.trim());
+        const isItalicStage = para.trim().startsWith('(') && para.trim().endsWith(')');
 
-Keep us from all the fantasies of the Evil One, and from the temptations that assail us. Calm the impulses of carnal desire, and quench the fiery darts of the Evil One that are craftily aimed at us.
+        if (isHeading) {
+          return (
+            <Text
+              key={idx}
+              style={{
+                fontFamily: 'serif',
+                fontWeight: '700',
+                fontSize: 14,
+                color: colors.sacredGold,
+                textAlign: 'center',
+                letterSpacing: 0.8,
+                marginTop: idx > 0 ? spacing.m : 0,
+                marginBottom: spacing.xs,
+              }}
+            >
+              {para.trim()}
+            </Text>
+          );
+        }
 
-Grant us a peaceful and undisturbed night. Free us from all darkness that comes from sin.
+        if (isItalicStage) {
+          return (
+            <Text
+              key={idx}
+              style={{
+                fontFamily: 'serif',
+                fontStyle: 'italic',
+                fontSize: 13,
+                color: colors.textMuted,
+                lineHeight: 20,
+                textAlign: 'center',
+                marginBottom: spacing.s,
+              }}
+            >
+              {para.trim()}
+            </Text>
+          );
+        }
 
-Amen.`,
-  },
-  will: {
-    title: "Prayer for God's Will",
-    text: `O God, our Lord and Savior, not my will but Thine be done in all things, always and forever. Let me not trust in my own wisdom, but in Thee who art the source of all wisdom and goodness.
+        if (isDialogLine) {
+          const lines = para.split('\n');
+          return (
+            <View key={idx} style={{ marginBottom: spacing.s }}>
+              {lines.map((line, li) => (
+                <Text
+                  key={li}
+                  style={{
+                    fontFamily: 'serif',
+                    fontSize: 15,
+                    color: /^(PRIEST|CHOIR|PEOPLE|READER)/.test(line.trim())
+                      ? colors.byzantineCrimson + 'FF'
+                      : colors.textPrimary,
+                    lineHeight: 24,
+                    fontWeight: /^(PRIEST|CHOIR|PEOPLE|READER)/.test(line.trim())
+                      ? '700'
+                      : '400',
+                  }}
+                >
+                  {line}
+                </Text>
+              ))}
+            </View>
+          );
+        }
 
-Guide my steps, order my ways, and if in my ignorance I should wander from Thy path, bring me back with mercy and compassion.
+        return (
+          <Text
+            key={idx}
+            style={{
+              fontFamily: 'serif',
+              fontSize: 16,
+              color: colors.textPrimary,
+              lineHeight: 28,
+              textAlign: 'justify',
+              marginBottom: idx < paragraphs.length - 1 ? spacing.m : 0,
+            }}
+          >
+            {para.trim()}
+          </Text>
+        );
+      })}
+    </>
+  );
+}
 
-Amen.`,
-  },
-};
+function ListContent({ items, rubric }: { items: string[]; rubric?: string }) {
+  return (
+    <>
+      {rubric && <Rubric text={rubric} />}
+      {items.map((item, idx) => (
+        <View
+          key={idx}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            marginBottom: spacing.s,
+          }}
+        >
+          <View
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 12,
+              backgroundColor: 'rgba(212,175,55,0.15)',
+              borderWidth: 1,
+              borderColor: colors.hairline,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: spacing.s,
+              marginTop: 2,
+              flexShrink: 0,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.sacredGold,
+                fontSize: 11,
+                fontWeight: '700',
+              }}
+            >
+              {idx + 1}
+            </Text>
+          </View>
+          <Text
+            style={{
+              fontFamily: 'serif',
+              fontSize: 16,
+              color: colors.textPrimary,
+              lineHeight: 26,
+              flex: 1,
+            }}
+          >
+            {item}
+          </Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
+function SectionNavPills({ currentSlug }: { currentSlug: string }) {
+  const section = PRAYER_SECTIONS.find((s) =>
+    s.prayers.some((p) => p.slug === currentSlug)
+  );
+  if (!section || section.prayers.length <= 1) return null;
+
+  const currentIdx = section.prayers.findIndex((p) => p.slug === currentSlug);
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: spacing.xl,
+        paddingTop: spacing.m,
+        borderTopWidth: 1,
+        borderTopColor: colors.hairline,
+      }}
+    >
+      {currentIdx > 0 ? (
+        <Pressable
+          onPress={() =>
+            router.replace(`/prayers/${section.prayers[currentIdx - 1].slug}` as any)
+          }
+          style={({ pressed }) => ({
+            flex: 1,
+            marginRight: spacing.xs,
+            backgroundColor: pressed
+              ? 'rgba(212,175,55,0.12)'
+              : colors.surfaceElevated,
+            borderRadius: radii.m,
+            borderWidth: 1,
+            borderColor: colors.hairline,
+            padding: spacing.s,
+          })}
+        >
+          <Text style={{ color: colors.textMuted, fontSize: 11 }}>‹ Previous</Text>
+          <Text
+            style={{
+              color: colors.sacredGold,
+              fontSize: 13,
+              fontFamily: 'serif',
+              fontWeight: '600',
+              marginTop: 2,
+            }}
+            numberOfLines={1}
+          >
+            {section.prayers[currentIdx - 1].title}
+          </Text>
+        </Pressable>
+      ) : (
+        <View style={{ flex: 1, marginRight: spacing.xs }} />
+      )}
+
+      {currentIdx < section.prayers.length - 1 ? (
+        <Pressable
+          onPress={() =>
+            router.replace(`/prayers/${section.prayers[currentIdx + 1].slug}` as any)
+          }
+          style={({ pressed }) => ({
+            flex: 1,
+            marginLeft: spacing.xs,
+            backgroundColor: pressed
+              ? 'rgba(212,175,55,0.12)'
+              : colors.surfaceElevated,
+            borderRadius: radii.m,
+            borderWidth: 1,
+            borderColor: colors.hairline,
+            padding: spacing.s,
+            alignItems: 'flex-end',
+          })}
+        >
+          <Text style={{ color: colors.textMuted, fontSize: 11 }}>Next ›</Text>
+          <Text
+            style={{
+              color: colors.sacredGold,
+              fontSize: 13,
+              fontFamily: 'serif',
+              fontWeight: '600',
+              marginTop: 2,
+            }}
+            numberOfLines={1}
+          >
+            {section.prayers[currentIdx + 1].title}
+          </Text>
+        </Pressable>
+      ) : (
+        <View style={{ flex: 1, marginLeft: spacing.xs }} />
+      )}
+    </View>
+  );
+}
+
+function BookPageBadge({ page }: { page: number }) {
+  return (
+    <View
+      style={{
+        alignSelf: 'flex-end',
+        backgroundColor: 'rgba(212,175,55,0.1)',
+        borderRadius: radii.pill,
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        borderWidth: 1,
+        borderColor: colors.hairline,
+        marginBottom: spacing.m,
+      }}
+    >
+      <Text style={{ color: colors.textMuted, fontSize: 11, fontFamily: 'serif' }}>
+        Book p. {page}
+      </Text>
+    </View>
+  );
+}
 
 export default function PrayerDetail() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const prayer = PRAYERS[slug ?? 'morning'] ?? PRAYERS['morning'];
+  const prayer = getPrayerBySlug(slug ?? '') ?? getPrayerBySlug('morning-trisagion')!;
+
+  const section = PRAYER_SECTIONS.find((s) =>
+    s.prayers.some((p) => p.slug === prayer.slug)
+  );
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.surfaceDeep }}>
@@ -47,33 +349,59 @@ export default function PrayerDetail() {
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingHorizontal: spacing.m,
-          paddingVertical: spacing.s,
+          paddingHorizontal: spacing.s,
+          paddingVertical: spacing.xs,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.hairline,
+          backgroundColor: colors.surface,
         }}
       >
-        <Pressable onPress={() => router.back()} style={{ marginRight: spacing.m }}>
-          <Text style={{ color: colors.sacredGold, fontSize: 24 }}>‹</Text>
-        </Pressable>
-        <Text
-          style={{
-            fontFamily: 'serif',
-            fontWeight: '700',
-            fontSize: 20,
-            color: colors.ivoryVellum,
-            flex: 1,
-          }}
-        >
-          {prayer.title}
-        </Text>
+        <BackButton />
+        <View style={{ flex: 1 }} />
+        {section && (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: spacing.s,
+              paddingVertical: 4,
+              backgroundColor: section.color + '22',
+              borderRadius: radii.pill,
+              marginRight: spacing.s,
+            }}
+          >
+            <Text style={{ fontSize: 12, marginRight: 4 }}>{section.icon}</Text>
+            <Text
+              style={{
+                color: section.color,
+                fontSize: 11,
+                fontWeight: '600',
+              }}
+              numberOfLines={1}
+            >
+              {section.title}
+            </Text>
+          </View>
+        )}
       </View>
 
-      <CrossDivider />
-
       <ScrollView
-        contentContainerStyle={{ padding: spacing.m, paddingBottom: spacing.xxxl }}
+        contentContainerStyle={{
+          padding: spacing.m,
+          paddingBottom: spacing.xxxl,
+        }}
         showsVerticalScrollIndicator={false}
       >
-        <FiligreeFrame>
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: colors.hairline,
+            borderRadius: radii.l,
+            backgroundColor: colors.surface,
+            padding: spacing.m,
+            marginBottom: spacing.m,
+          }}
+        >
           <Text
             style={{
               fontFamily: 'serif',
@@ -81,24 +409,47 @@ export default function PrayerDetail() {
               fontSize: 22,
               color: colors.sacredGold,
               textAlign: 'center',
-              marginBottom: spacing.m,
+              letterSpacing: 0.5,
             }}
           >
-            ✟  {prayer.title}  ✟
+            {prayer.title}
           </Text>
-          <Text
-            style={{
-              fontFamily: 'serif',
-              fontStyle: 'italic',
-              fontSize: 16,
-              color: colors.ivoryVellum,
-              lineHeight: 26,
-              textAlign: 'justify',
-            }}
-          >
-            {prayer.text}
-          </Text>
-        </FiligreeFrame>
+
+          {prayer.subtitle && (
+            <Text
+              style={{
+                fontFamily: 'serif',
+                fontStyle: 'italic',
+                fontSize: 13,
+                color: colors.textMuted,
+                textAlign: 'center',
+                marginTop: spacing.xs,
+              }}
+            >
+              {prayer.subtitle}
+            </Text>
+          )}
+
+          {prayer.bookPage && (
+            <View style={{ alignItems: 'center', marginTop: spacing.s }}>
+              <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+                — p. {prayer.bookPage} —
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <GoldRule />
+
+        {prayer.rubric && <Rubric text={prayer.rubric} />}
+
+        {prayer.kind === 'list' && prayer.items ? (
+          <ListContent items={prayer.items} />
+        ) : prayer.text ? (
+          <PrayerText text={prayer.text} />
+        ) : null}
+
+        <SectionNavPills currentSlug={prayer.slug} />
       </ScrollView>
     </SafeAreaView>
   );
