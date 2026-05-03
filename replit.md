@@ -37,6 +37,7 @@ artifacts/red-prayer-book/
 │   │   ├── calendar.tsx             # Orthodox liturgical calendar (New/Old style)
 │   │   ├── bible.tsx                # Bible reader (John 1) with verse highlighting & commentary
 │   │   └── you.tsx                  # Profile: streak, 8 badges + progress rings, activity feed
+│   ├── companion.tsx                # AI Spiritual Companion chat (Father Seraphim, SSE streaming)
 │   ├── settings.tsx                 # Settings sheet: notifications toggle, calendar style, about
 │   ├── bookmarks.tsx                # Saved bookmarks & Bible highlights
 │   ├── onboarding/[step].tsx        # 3-step onboarding
@@ -79,6 +80,7 @@ artifacts/red-prayer-book/
 - **Page-flip Prayer Book**: Swipe-to-turn pages with 3D perspective curl animation
 - **Orthodox Calendar**: Monthly grid, feast days, Old/New style toggle, tone of week, Sunday readings
 - **Bible Reader**: John 1 with verse long-press → highlight/copy/share/bookmark actions
+- **AI Spiritual Companion** (`app/companion.tsx`): Full-screen chat with "Father Seraphim" — an Orthodox spiritual guide powered by Claude via Anthropic API. SSE streaming responses, conversation history persisted to PostgreSQL, 6 suggestion prompts on welcome screen. Entry banner on "You" tab.
 - **Profile (You)**: Streak counter, 8 badge progress rings, "Add Your Church" modal, activity feed with tab filters
 - **Settings**: Notification toggles (Morning/Evening prayer reminders), calendar style, about — presented as modal sheet
 - **Bookmarks**: Saved prayer pages + Bible verse highlights
@@ -94,6 +96,20 @@ artifacts/red-prayer-book/
 | Bible | `book-open-variant` | `book-open-outline` |
 | You | `account-circle` | `account-circle-outline` |
 
+## API Server (`artifacts/api-server`)
+
+Express + Drizzle ORM + PostgreSQL. Routes:
+- `GET /api/healthz` — health check
+- `GET /api/anthropic/conversations` — list conversations
+- `POST /api/anthropic/conversations` — create conversation
+- `DELETE /api/anthropic/conversations/:id` — delete conversation
+- `GET /api/anthropic/conversations/:id/messages` — list messages
+- `POST /api/anthropic/conversations/:id/messages` — send user message + stream AI response (SSE)
+
+DB tables: `conversations`, `messages` (in `lib/db/src/schema/`).
+
+Anthropic integration via `@workspace/integrations-anthropic-ai` (uses `AI_INTEGRATIONS_ANTHROPIC_BASE_URL` + `AI_INTEGRATIONS_ANTHROPIC_API_KEY` env vars set by Replit).
+
 ## Packages Added Beyond Scaffold
 
 | Package | Purpose |
@@ -103,6 +119,9 @@ artifacts/red-prayer-book/
 | `@gorhom/bottom-sheet` | Installed (sheets use native Modal in Expo Go) |
 | `react-native-svg` | ProgressRing SVG arcs for badge system |
 | `expo-notifications` ~0.32.17 | Morning/evening prayer local notifications |
+| `@anthropic-ai/sdk` ^0.78.0 | Claude AI via Replit AI Integrations proxy |
+| `p-limit` ^7.3.0 | Concurrency limiting for batch processing |
+| `p-retry` ^7.1.1 | Retry logic for batch processing |
 
 ## Design References
 UI-UX reference images saved at `attached_assets/uiux/`:

@@ -127,6 +127,48 @@ export default function You() {
           </View>
         </View>
 
+        {/* AI Spiritual Companion banner */}
+        <Pressable
+          onPress={() => router.push("/companion")}
+          style={({ pressed }) => ({
+            flexDirection: "row",
+            alignItems: "center",
+            gap: spacing.m,
+            paddingVertical: spacing.m,
+            paddingHorizontal: spacing.m,
+            borderColor: C.sacredGold,
+            borderWidth: 1,
+            borderRadius: radii.m,
+            marginBottom: spacing.s,
+            backgroundColor: pressed ? C.surface : C.byzantineCrimson,
+            opacity: pressed ? 0.9 : 1,
+          })}
+        >
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: C.surfaceDeep,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: C.sacredGold,
+            }}
+          >
+            <MaterialCommunityIcons name="cross" size={22} color={C.sacredGold} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 15 }}>
+              Spiritual Companion
+            </Text>
+            <Text style={{ color: C.textSecondary, fontSize: 12, marginTop: 2 }}>
+              Ask Father Seraphim about prayers & faith
+            </Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={20} color={C.sacredGold} />
+        </Pressable>
+
         {/* Add your church */}
         <Pressable
           onPress={() => setChurchModal(true)}
