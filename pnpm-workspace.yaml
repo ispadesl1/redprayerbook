@@ -158,3 +158,19 @@ overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
   esbuild: "0.27.3"
+  # ── Security vulnerability patches ──────────────────────────────────────────
+  # picomatch <2.3.2 (High: ReDoS) + >=4.0.0 <4.0.4 (High: ReDoS, Med: method injection)
+  picomatch: "4.0.4"
+  # path-to-regexp >=8.0.0 <8.4.0 (High: DoS, Med: ReDoS)
+  "path-to-regexp": "8.4.2"
+  # lodash >=4.0.0 <=4.17.23 (High: code injection, Med: prototype pollution)
+  lodash: "4.18.1"
+  # brace-expansion >=2.0.0 <2.0.3 (Med: zero-step sequence ReDoS)
+  "brace-expansion": "2.0.3"
+  # yaml >=2.0.0 <2.8.3 (Med: stack overflow via deeply nested input)
+  yaml: "2.8.3"
+  # postcss <8.5.10 (Med: XSS via unescaped </style> in stringify output)
+  postcss: "8.5.13"
+  # uuid <14.0.0 (Med: missing buffer bounds check in v3/v5/v6)
+  # NOTE: uuid requires a jump to v14 which breaks xcode + ngrok transitive APIs.
+  # Accepted risk: the vulnerable code path (buf parameter) is unused in these tools.
