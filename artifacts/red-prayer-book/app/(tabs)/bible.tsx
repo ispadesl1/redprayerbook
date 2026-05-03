@@ -18,7 +18,7 @@ import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
 import { addHighlight, listHighlights } from "@/lib/db";
 import { incrementBadge } from "@/lib/badges";
-import { BIBLE_SECTIONS, getBookById, type BibleBook, type BibleChapter as BibleChapterType } from "@/lib/bible-structure";
+import { BIBLE_SECTIONS, type BibleBook } from "@/lib/bible-structure";
 import { fetchChapter, type BibleChapter, type BibleVerse } from "@/lib/bible-fetch";
 
 const { width } = Dimensions.get("window");
