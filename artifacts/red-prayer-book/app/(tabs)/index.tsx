@@ -12,6 +12,7 @@ import { recordStreakToday } from "@/lib/db";
 import { incrementBadge } from "@/lib/badges";
 import type { BadgeDef } from "@/lib/badges";
 import { getCurrentHour, formatTime, type CanonicalHour } from "@/lib/canonicalHours";
+import { getTodayFastStatus, getPeriodProgress, getStrictnessColor } from "@/lib/fasting";
 
 type MCI = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 
@@ -80,6 +81,76 @@ function CanonicalHoursWidget() {
         <Text style={{ color: C.textMuted, fontSize: 11 }}>{hour.timeLabel}</Text>
         <Text style={{ color: C.hairline, marginHorizontal: 4 }}>·</Text>
         <Text style={{ color: C.textMuted, fontFamily: "serif", fontStyle: "italic", fontSize: 11 }}>{hour.greekName}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function FastingWidget() {
+  const status = getTodayFastStatus();
+  const color = getStrictnessColor(status.strictness);
+  const progress = status.period ? getPeriodProgress(status.period) : null;
+
+  return (
+    <Pressable
+      onPress={() => router.push("/fasting")}
+      style={({ pressed }) => ({
+        marginHorizontal: spacing.m,
+        marginBottom: spacing.m,
+        borderRadius: radii.l,
+        borderWidth: 1,
+        borderColor: color,
+        overflow: "hidden",
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      {/* Header strip */}
+      <View style={{ backgroundColor: color, paddingHorizontal: spacing.m, paddingVertical: spacing.s, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+          <MaterialCommunityIcons
+            name={status.isFastFree ? "party-popper" : status.isFasting ? "fish" : "information-outline"}
+            size={14}
+            color="rgba(245,235,221,0.9)"
+          />
+          <Text style={{ color: "rgba(245,235,221,0.9)", fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" }}>
+            {status.isFastFree ? "Fast-Free Period" : status.isFasting ? "Fasting Today" : "Fasting Calendar"}
+          </Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={16} color="rgba(245,235,221,0.7)" />
+      </View>
+
+      {/* Body */}
+      <View style={{ backgroundColor: C.surfaceElevated, padding: spacing.m }}>
+        <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16, marginBottom: 2 }}>
+          {status.label}
+        </Text>
+        <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 12, marginBottom: status.rules.length ? spacing.xs : 0 }}>
+          {status.sublabel}
+        </Text>
+        {status.rules[0] ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: 4 }}>
+            <MaterialCommunityIcons
+              name={status.isFastFree ? "check-circle-outline" : "circle-small"}
+              size={13}
+              color={color}
+            />
+            <Text style={{ color: C.textMuted, fontSize: 12, flex: 1 }} numberOfLines={1}>
+              {status.rules[0]}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Progress bar for active period */}
+        {progress && !status.isFastFree && (
+          <View style={{ marginTop: spacing.s }}>
+            <View style={{ height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)" }}>
+              <View style={{ width: `${Math.round(progress.pct * 100)}%`, height: 3, borderRadius: 2, backgroundColor: color }} />
+            </View>
+            <Text style={{ color: C.textMuted, fontSize: 10, marginTop: 2 }}>
+              {progress.daysLeft} day{progress.daysLeft === 1 ? "" : "s"} remaining · {Math.round(progress.pct * 100)}% complete
+            </Text>
+          </View>
+        )}
       </View>
     </Pressable>
   );
@@ -207,6 +278,9 @@ export default function Home() {
 
         {/* Canonical Hours Widget */}
         <CanonicalHoursWidget />
+
+        {/* Fasting Widget */}
+        <FastingWidget />
 
         {/* Quick Tiles 2×3 */}
         <View

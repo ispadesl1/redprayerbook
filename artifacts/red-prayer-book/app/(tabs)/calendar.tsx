@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { ScrollView, View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
 import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
 import { getCalendarEntry } from "@/lib/calendar";
 import { incrementBadge } from "@/lib/badges";
+import { getTodayFastStatus, getPeriodProgress, getStrictnessColor, formatShortDate } from "@/lib/fasting";
 
 const MONTHS = [
   "January","February","March","April","May","June",
@@ -119,6 +121,60 @@ export default function Calendar() {
         </View>
 
         <MonthGrid year={year} month={month} style={calStyle} />
+
+        {/* Fasting status card */}
+        {(() => {
+          const status = getTodayFastStatus(now);
+          const color = getStrictnessColor(status.strictness);
+          const progress = status.period ? getPeriodProgress(status.period, now) : null;
+          return (
+            <Pressable
+              onPress={() => router.push("/fasting" as never)}
+              style={({ pressed }) => ({
+                marginHorizontal: spacing.m,
+                marginBottom: spacing.m,
+                borderRadius: radii.m,
+                borderWidth: 1.5,
+                borderColor: color,
+                backgroundColor: C.surfaceElevated,
+                overflow: "hidden",
+                opacity: pressed ? 0.85 : 1,
+              })}
+            >
+              <View style={{ backgroundColor: color, paddingHorizontal: spacing.m, paddingVertical: 6, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+                  <MaterialCommunityIcons name={status.isFastFree ? "party-popper" : "fish"} size={13} color="rgba(245,235,221,0.9)" />
+                  <Text style={{ color: "rgba(245,235,221,0.9)", fontSize: 11, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" }}>
+                    Today's Fast
+                  </Text>
+                </View>
+                {status.period && (
+                  <Text style={{ color: "rgba(245,235,221,0.75)", fontSize: 11 }}>
+                    {formatShortDate(status.period.startDate)} — {formatShortDate(status.period.endDate)}
+                  </Text>
+                )}
+              </View>
+              <View style={{ padding: spacing.m }}>
+                <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 15, marginBottom: 2 }}>
+                  {status.label}
+                </Text>
+                <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 13 }}>
+                  {status.sublabel}
+                </Text>
+                {progress && !status.isFastFree && (
+                  <View style={{ marginTop: spacing.s }}>
+                    <View style={{ height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)" }}>
+                      <View style={{ width: `${Math.round(progress.pct * 100)}%`, height: 4, borderRadius: 2, backgroundColor: color }} />
+                    </View>
+                    <Text style={{ color: C.textMuted, fontSize: 11, marginTop: 3 }}>
+                      Day {progress.elapsed} of {progress.total} · {progress.daysLeft} day{progress.daysLeft === 1 ? "" : "s"} left
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </Pressable>
+          );
+        })()}
 
         {/* Tone & today's reading */}
         <View
