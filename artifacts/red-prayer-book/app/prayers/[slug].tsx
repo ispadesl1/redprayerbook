@@ -14,6 +14,7 @@ import {
   isPrayerBookmarked,
   addPrayerBookmark,
   removePrayerBookmark,
+  recordPrayerRead,
 } from '@/lib/db';
 
 function BackButton() {
@@ -348,6 +349,7 @@ export default function PrayerDetail() {
 
   useEffect(() => {
     isPrayerBookmarked(prayer.slug).then(setBookmarked);
+    recordPrayerRead(prayer.slug);
   }, [prayer.slug]);
 
   const toggleBookmark = useCallback(async () => {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { ScrollView, View, Text, Pressable, Modal, Alert } from "react-native";
+import { ScrollView, View, Text, Pressable, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -8,7 +8,7 @@ import { CrossDivider } from "@/components/ui/CrossDivider";
 import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
 import { BADGE_DEFS, getAllBadgeProgress } from "@/lib/badges";
-import { getStreakCount, recordStreakToday } from "@/lib/db";
+import { getStreakData, recordStreakToday, type StreakData } from "@/lib/db";
 
 const ACTIVITY_TABS = ["All", "Highlights", "Notes", "Badges"] as const;
 type ActivityTab = (typeof ACTIVITY_TABS)[number];
@@ -19,20 +19,222 @@ const ACTIVITY_ITEMS = [
   { id: "3", text: "You completed Morning Prayer", when: "2d" },
 ];
 
+// Streak milestones: [days, label]
+const MILESTONES: [number, string][] = [
+  [3, "3"],
+  [7, "7"],
+  [30, "30"],
+  [100, "100"],
+];
+
+function FlameIcon({ size = 32, lit = true }: { size?: number; lit?: boolean }) {
+  return (
+    <Text style={{ fontSize: size, opacity: lit ? 1 : 0.25 }}>🔥</Text>
+  );
+}
+
+function StreakCard({ data }: { data: StreakData }) {
+  const { currentStreak, longestStreak, prayersRead } = data;
+  const nextMilestone = MILESTONES.find(([days]) => currentStreak < days);
+  const nextTarget = nextMilestone ? nextMilestone[0] : null;
+  const progressPct = nextTarget
+    ? Math.min((currentStreak / nextTarget) * 100, 100)
+    : 100;
+
+  return (
+    <View
+      style={{
+        marginBottom: spacing.m,
+        borderColor: currentStreak >= 7 ? C.sacredGold : C.hairline,
+        borderWidth: currentStreak >= 7 ? 1.5 : 1,
+        borderRadius: radii.m,
+        backgroundColor: C.surfaceElevated,
+        overflow: "hidden",
+      }}
+    >
+      {/* Top row: flame + streak number + label */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: spacing.m,
+          paddingTop: spacing.m,
+          paddingBottom: spacing.s,
+        }}
+      >
+        <FlameIcon size={36} lit={currentStreak > 0} />
+        <View style={{ marginLeft: spacing.s, flex: 1 }}>
+          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+            <Text
+              style={{
+                color: currentStreak > 0 ? C.ivoryVellum : C.textMuted,
+                fontFamily: "serif",
+                fontWeight: "700",
+                fontSize: 40,
+                lineHeight: 44,
+              }}
+            >
+              {currentStreak}
+            </Text>
+            <Text
+              style={{
+                color: C.textMuted,
+                fontFamily: "serif",
+                fontSize: 15,
+                marginBottom: 4,
+              }}
+            >
+              {currentStreak === 1 ? "day streak" : "day streak"}
+            </Text>
+          </View>
+          <Text style={{ color: C.textMuted, fontSize: 12 }}>
+            {currentStreak === 0
+              ? "Open the app daily to build your streak"
+              : currentStreak >= 30
+              ? "✟ Remarkable devotion — keep it up!"
+              : currentStreak >= 7
+              ? "⭐ A full week of prayer!"
+              : "Keep praying daily to grow your streak"}
+          </Text>
+        </View>
+      </View>
+
+      {/* Progress bar toward next milestone */}
+      {nextTarget !== null && (
+        <View style={{ paddingHorizontal: spacing.m, paddingBottom: spacing.s }}>
+          <View
+            style={{
+              height: 5,
+              borderRadius: 3,
+              backgroundColor: "rgba(255,255,255,0.08)",
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                width: `${progressPct}%`,
+                height: 5,
+                borderRadius: 3,
+                backgroundColor: currentStreak >= 7 ? C.sacredGold : C.byzantineCrimson,
+              }}
+            />
+          </View>
+          <Text style={{ color: C.textMuted, fontSize: 11, marginTop: 4 }}>
+            {nextTarget - currentStreak} more {nextTarget - currentStreak === 1 ? "day" : "days"} to reach {nextTarget}-day milestone
+          </Text>
+        </View>
+      )}
+
+      {/* Milestone pips */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: spacing.m,
+          paddingBottom: spacing.m,
+          gap: spacing.xs,
+        }}
+      >
+        {MILESTONES.map(([days, label]) => {
+          const reached = currentStreak >= days;
+          return (
+            <View
+              key={days}
+              style={{
+                flex: 1,
+                alignItems: "center",
+                paddingVertical: spacing.xs,
+                borderRadius: radii.s,
+                backgroundColor: reached
+                  ? C.byzantineCrimson + "55"
+                  : "rgba(255,255,255,0.05)",
+                borderWidth: 1,
+                borderColor: reached ? C.sacredGold + "88" : C.hairline,
+              }}
+            >
+              {reached ? (
+                <Text style={{ fontSize: 14 }}>🔥</Text>
+              ) : (
+                <MaterialCommunityIcons name="fire" size={14} color={C.textMuted} />
+              )}
+              <Text
+                style={{
+                  color: reached ? C.sacredGold : C.textMuted,
+                  fontSize: 11,
+                  fontWeight: "700",
+                  marginTop: 2,
+                }}
+              >
+                {label}d
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+
+      {/* Bottom stat bar */}
+      <View
+        style={{
+          flexDirection: "row",
+          borderTopWidth: 1,
+          borderTopColor: C.hairline,
+        }}
+      >
+        {[
+          { label: "Best Streak", value: `${longestStreak}d`, icon: "trophy-outline" as const },
+          { label: "Prayers Read", value: String(prayersRead), icon: "book-open-outline" as const },
+        ].map(({ label, value, icon }, i) => (
+          <View
+            key={label}
+            style={{
+              flex: 1,
+              paddingVertical: spacing.s,
+              paddingHorizontal: spacing.m,
+              alignItems: "center",
+              borderLeftWidth: i > 0 ? 1 : 0,
+              borderLeftColor: C.hairline,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <MaterialCommunityIcons name={icon} size={13} color={C.sacredGold} />
+              <Text
+                style={{
+                  color: C.ivoryVellum,
+                  fontFamily: "serif",
+                  fontWeight: "700",
+                  fontSize: 17,
+                }}
+              >
+                {value}
+              </Text>
+            </View>
+            <Text style={{ color: C.textMuted, fontSize: 10, marginTop: 1 }}>{label}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export default function You() {
   const [activeTab, setActiveTab] = useState<ActivityTab>("All");
-  const [streak, setStreak] = useState(1);
+  const [streakData, setStreakData] = useState<StreakData>({
+    currentStreak: 0,
+    longestStreak: 0,
+    totalDaysOpened: 0,
+    prayersRead: 0,
+  });
   const [badgeProgress, setBadgeProgress] = useState<Record<string, number>>({});
   const [churchModal, setChurchModal] = useState(false);
   const [badgeDetailModal, setBadgeDetailModal] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     await recordStreakToday();
-    const [count, progress] = await Promise.all([
-      getStreakCount(),
+    const [data, progress] = await Promise.all([
+      getStreakData(),
       getAllBadgeProgress(),
     ]);
-    setStreak(count);
+    setStreakData(data);
     setBadgeProgress(progress);
   }, []);
 
@@ -65,14 +267,7 @@ export default function You() {
         {/* Profile row */}
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.m }}>
           <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontFamily: "serif",
-                fontWeight: "700",
-                fontSize: 28,
-                color: C.ivoryVellum,
-              }}
-            >
+            <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 28, color: C.ivoryVellum }}>
               Andy Acevedo
             </Text>
             <View style={{ flexDirection: "row", gap: spacing.xs, marginTop: spacing.xs }}>
@@ -95,31 +290,20 @@ export default function You() {
           <View style={{ position: "relative" }}>
             <View
               style={{
-                width: 80,
-                height: 80,
-                borderRadius: 40,
-                borderWidth: 2,
-                borderColor: C.sacredGold,
+                width: 80, height: 80, borderRadius: 40,
+                borderWidth: 2, borderColor: C.sacredGold,
                 backgroundColor: C.byzantineCrimson,
-                alignItems: "center",
-                justifyContent: "center",
+                alignItems: "center", justifyContent: "center",
               }}
             >
-              <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 30 }}>
-                A
-              </Text>
+              <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 30 }}>A</Text>
             </View>
             <Pressable
               style={{
-                position: "absolute",
-                bottom: 0,
-                right: 0,
-                width: 24,
-                height: 24,
-                borderRadius: 12,
+                position: "absolute", bottom: 0, right: 0,
+                width: 24, height: 24, borderRadius: 12,
                 backgroundColor: C.sacredGold,
-                alignItems: "center",
-                justifyContent: "center",
+                alignItems: "center", justifyContent: "center",
               }}
             >
               <MaterialCommunityIcons name="camera" size={13} color={C.deepOnyx} />
@@ -131,40 +315,20 @@ export default function You() {
         <Pressable
           onPress={() => router.push("/intention")}
           style={({ pressed }) => ({
-            flexDirection: "row",
-            alignItems: "center",
-            gap: spacing.m,
-            paddingVertical: spacing.m,
-            paddingHorizontal: spacing.m,
-            borderColor: C.hairline,
-            borderWidth: 1,
-            borderRadius: radii.m,
+            flexDirection: "row", alignItems: "center", gap: spacing.m,
+            paddingVertical: spacing.m, paddingHorizontal: spacing.m,
+            borderColor: C.hairline, borderWidth: 1, borderRadius: radii.m,
             marginBottom: spacing.s,
             backgroundColor: pressed ? C.surface : C.surfaceElevated,
             opacity: pressed ? 0.9 : 1,
           })}
         >
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: C.byzantineCrimson,
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: C.sacredGold,
-            }}
-          >
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.byzantineCrimson, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: C.sacredGold }}>
             <MaterialCommunityIcons name="hands-pray" size={22} color={C.sacredGold} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: C.textPrimary, fontFamily: "serif", fontWeight: "700", fontSize: 15 }}>
-              Compose a Prayer
-            </Text>
-            <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 2 }}>
-              Enter your intention — receive a personal Orthodox prayer
-            </Text>
+            <Text style={{ color: C.textPrimary, fontFamily: "serif", fontWeight: "700", fontSize: 15 }}>Compose a Prayer</Text>
+            <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 2 }}>Enter your intention — receive a personal Orthodox prayer</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={20} color={C.sacredGold} />
         </Pressable>
@@ -173,40 +337,20 @@ export default function You() {
         <Pressable
           onPress={() => router.push("/companion")}
           style={({ pressed }) => ({
-            flexDirection: "row",
-            alignItems: "center",
-            gap: spacing.m,
-            paddingVertical: spacing.m,
-            paddingHorizontal: spacing.m,
-            borderColor: C.sacredGold,
-            borderWidth: 1,
-            borderRadius: radii.m,
+            flexDirection: "row", alignItems: "center", gap: spacing.m,
+            paddingVertical: spacing.m, paddingHorizontal: spacing.m,
+            borderColor: C.sacredGold, borderWidth: 1, borderRadius: radii.m,
             marginBottom: spacing.s,
             backgroundColor: pressed ? C.surface : C.byzantineCrimson,
             opacity: pressed ? 0.9 : 1,
           })}
         >
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: C.surfaceDeep,
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: C.sacredGold,
-            }}
-          >
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.surfaceDeep, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: C.sacredGold }}>
             <MaterialCommunityIcons name="cross" size={22} color={C.sacredGold} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 15 }}>
-              Spiritual Companion
-            </Text>
-            <Text style={{ color: C.textSecondary, fontSize: 12, marginTop: 2 }}>
-              Ask Father Seraphim about prayers & faith
-            </Text>
+            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 15 }}>Spiritual Companion</Text>
+            <Text style={{ color: C.textSecondary, fontSize: 12, marginTop: 2 }}>Ask Father Seraphim about prayers & faith</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={20} color={C.sacredGold} />
         </Pressable>
@@ -215,22 +359,14 @@ export default function You() {
         <Pressable
           onPress={() => setChurchModal(true)}
           style={({ pressed }) => ({
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: spacing.xs,
-            paddingVertical: spacing.m,
-            borderColor: C.sacredGold,
-            borderWidth: 1,
-            borderRadius: radii.m,
-            marginBottom: spacing.m,
-            opacity: pressed ? 0.7 : 1,
+            flexDirection: "row", alignItems: "center", justifyContent: "center",
+            gap: spacing.xs, paddingVertical: spacing.m,
+            borderColor: C.sacredGold, borderWidth: 1, borderRadius: radii.m,
+            marginBottom: spacing.m, opacity: pressed ? 0.7 : 1,
           })}
         >
           <MaterialCommunityIcons name="church" size={18} color={C.sacredGold} />
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "600", fontSize: 15 }}>
-            Add Your Church
-          </Text>
+          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "600", fontSize: 15 }}>Add Your Church</Text>
         </Pressable>
 
         {/* Stat tiles */}
@@ -243,51 +379,20 @@ export default function You() {
             <Pressable
               key={label}
               style={({ pressed }) => ({
-                flex: 1,
-                paddingVertical: spacing.l,
-                alignItems: "center",
-                borderColor: C.hairline,
-                borderWidth: 1,
-                borderRadius: radii.m,
+                flex: 1, paddingVertical: spacing.l, alignItems: "center",
+                borderColor: C.hairline, borderWidth: 1, borderRadius: radii.m,
                 backgroundColor: pressed ? C.surface : C.surfaceElevated,
                 gap: spacing.xs,
               })}
             >
               <MaterialCommunityIcons name={icon} size={24} color={C.sacredGold} />
-              <Text style={{ color: C.textPrimary, fontFamily: "serif", fontWeight: "600", fontSize: 13 }}>
-                {label}
-              </Text>
+              <Text style={{ color: C.textPrimary, fontFamily: "serif", fontWeight: "600", fontSize: 13 }}>{label}</Text>
             </Pressable>
           ))}
         </View>
 
-        {/* Streak */}
-        <View
-          style={{
-            marginBottom: spacing.m,
-            paddingVertical: spacing.m,
-            paddingHorizontal: spacing.m,
-            borderColor: C.hairline,
-            borderWidth: 1,
-            borderRadius: radii.m,
-            backgroundColor: C.surfaceElevated,
-            flexDirection: "row",
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: C.ivoryVellum, fontFamily: "serif", fontWeight: "700", fontSize: 36, marginRight: spacing.m }}>
-            {streak}
-          </Text>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 15 }}>
-              App Streak
-            </Text>
-            <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 2 }}>
-              Keep opening the app daily
-            </Text>
-          </View>
-          <MaterialCommunityIcons name="lightning-bolt" size={28} color={C.sacredGold} />
-        </View>
+        {/* ── Streak card ── */}
+        <StreakCard data={streakData} />
 
         {/* Badges */}
         <View
@@ -306,8 +411,6 @@ export default function You() {
             </Text>
             <MaterialCommunityIcons name="medal-outline" size={22} color={C.sacredGold} />
           </View>
-
-          {/* Horizontal scroll row */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -323,16 +426,7 @@ export default function You() {
               />
             ))}
           </ScrollView>
-
-          <Text
-            style={{
-              color: C.textMuted,
-              fontSize: 11,
-              textAlign: "center",
-              marginTop: spacing.m,
-              fontStyle: "italic",
-            }}
-          >
+          <Text style={{ color: C.textMuted, fontSize: 11, textAlign: "center", marginTop: spacing.m, fontStyle: "italic" }}>
             Earn badges through daily prayer, reading, and worship.
           </Text>
         </View>
@@ -343,7 +437,6 @@ export default function You() {
         <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 22, color: C.ivoryVellum, marginTop: spacing.s, marginBottom: spacing.s }}>
           Activity
         </Text>
-
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.m }}>
           <View style={{ flexDirection: "row", gap: spacing.xs }}>
             {ACTIVITY_TABS.map((t) => (
@@ -351,8 +444,7 @@ export default function You() {
                 key={t}
                 onPress={() => setActiveTab(t)}
                 style={{
-                  paddingHorizontal: spacing.m,
-                  paddingVertical: 7,
+                  paddingHorizontal: spacing.m, paddingVertical: 7,
                   borderRadius: radii.pill,
                   borderColor: activeTab === t ? C.sacredGold : C.hairline,
                   borderWidth: 1,
@@ -371,33 +463,22 @@ export default function You() {
           <View
             key={item.id}
             style={{
-              flexDirection: "row",
-              alignItems: "center",
+              flexDirection: "row", alignItems: "center",
               paddingVertical: spacing.m,
-              borderBottomWidth: 1,
-              borderColor: C.hairline,
+              borderBottomWidth: 1, borderColor: C.hairline,
             }}
           >
             <View
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
+                width: 44, height: 44, borderRadius: 22,
                 backgroundColor: C.byzantineCrimson,
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: spacing.m,
-                borderWidth: 1,
-                borderColor: C.sacredGold,
+                alignItems: "center", justifyContent: "center",
+                marginRight: spacing.m, borderWidth: 1, borderColor: C.sacredGold,
               }}
             >
-              <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16 }}>
-                A
-              </Text>
+              <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16 }}>A</Text>
             </View>
-            <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 14, flex: 1, lineHeight: 20 }}>
-              {item.text}
-            </Text>
+            <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 14, flex: 1, lineHeight: 20 }}>{item.text}</Text>
             <Text style={{ color: C.textMuted, fontSize: 12, marginLeft: spacing.s }}>{item.when}</Text>
           </View>
         ))}
@@ -408,9 +489,7 @@ export default function You() {
         <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }} onPress={() => setChurchModal(false)} />
         <View style={{ backgroundColor: C.surfaceElevated, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: C.hairline, padding: spacing.l, paddingBottom: spacing.xxl }}>
           <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.sacredGold, alignSelf: "center", marginBottom: spacing.m }} />
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 20, textAlign: "center", marginBottom: spacing.m }}>
-            Add Your Church
-          </Text>
+          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 20, textAlign: "center", marginBottom: spacing.m }}>Add Your Church</Text>
           <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 14, textAlign: "center", marginBottom: spacing.l }}>
             Connect with your parish community to share prayers and events.
           </Text>
@@ -429,12 +508,8 @@ export default function You() {
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: C.surface, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: selectedBadgeDef.color, marginBottom: spacing.m }}>
               <MaterialCommunityIcons name={selectedBadgeDef.mciIcon as any} size={36} color={selectedBadgeDef.color} />
             </View>
-            <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 22, color: C.sacredGold, marginBottom: 6 }}>
-              {selectedBadgeDef.label}
-            </Text>
-            <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 14, textAlign: "center", marginBottom: spacing.m }}>
-              {selectedBadgeDef.description}
-            </Text>
+            <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 22, color: C.sacredGold, marginBottom: 6 }}>{selectedBadgeDef.label}</Text>
+            <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 14, textAlign: "center", marginBottom: spacing.m }}>{selectedBadgeDef.description}</Text>
             <View style={{ width: "100%", height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.1)", marginBottom: 8 }}>
               <View style={{ width: `${Math.round((selectedProgress / selectedBadgeDef.max) * 100)}%`, height: 6, borderRadius: 3, backgroundColor: selectedBadgeDef.color }} />
             </View>

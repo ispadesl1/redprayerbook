@@ -12,12 +12,26 @@ export type PrayerBookmark = {
   created_at: number;
 };
 
+export type PrayerRead = {
+  slug: string;
+  date: string;
+  timestamp: number;
+};
+
+export type StreakData = {
+  currentStreak: number;
+  longestStreak: number;
+  totalDaysOpened: number;
+  prayersRead: number;
+};
+
 const KEYS = {
   bookmarks: 'rpb:bookmarks',
   highlights: 'rpb:highlights',
   streak: 'rpb:streak',
   prayerIntentions: 'rpb:prayer_intentions',
   prayerBookmarks: 'rpb:prayer_bookmarks',
+  prayerReads: 'rpb:prayer_reads',
 };
 
 async function read<T>(key: string): Promise<T[]> {
@@ -32,6 +46,93 @@ async function read<T>(key: string): Promise<T[]> {
 async function write<T>(key: string, data: T[]): Promise<void> {
   await AsyncStorage.setItem(key, JSON.stringify(data));
 }
+
+function todayStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function calcCurrentStreak(days: string[]): number {
+  if (days.length === 0) return 0;
+  const sorted = [...new Set(days)].sort().reverse();
+  const today = todayStr();
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  if (sorted[0] !== today && sorted[0] !== yesterday) return 0;
+  let streak = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1]);
+    const curr = new Date(sorted[i]);
+    const diff = Math.round((prev.getTime() - curr.getTime()) / 86400000);
+    if (diff === 1) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function calcLongestStreak(days: string[]): number {
+  if (days.length === 0) return 0;
+  const sorted = [...new Set(days)].sort();
+  let longest = 1;
+  let current = 1;
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1]);
+    const curr = new Date(sorted[i]);
+    const diff = Math.round((curr.getTime() - prev.getTime()) / 86400000);
+    if (diff === 1) {
+      current++;
+      if (current > longest) longest = current;
+    } else {
+      current = 1;
+    }
+  }
+  return longest;
+}
+
+// ─── Streak ───────────────────────────────────────────────────────────────────
+
+export async function recordStreakToday(): Promise<void> {
+  const today = todayStr();
+  const days = await read<string>(KEYS.streak);
+  if (!days.includes(today)) {
+    days.push(today);
+    await write(KEYS.streak, days);
+  }
+}
+
+export async function getStreakCount(): Promise<number> {
+  const days = await read<string>(KEYS.streak);
+  return calcCurrentStreak(days);
+}
+
+export async function getStreakData(): Promise<StreakData> {
+  const [days, reads] = await Promise.all([
+    read<string>(KEYS.streak),
+    read<PrayerRead>(KEYS.prayerReads),
+  ]);
+  return {
+    currentStreak: calcCurrentStreak(days),
+    longestStreak: calcLongestStreak(days),
+    totalDaysOpened: new Set(days).size,
+    prayersRead: reads.length,
+  };
+}
+
+// ─── Prayer reads ─────────────────────────────────────────────────────────────
+
+export async function recordPrayerRead(slug: string): Promise<void> {
+  const reads = await read<PrayerRead>(KEYS.prayerReads);
+  reads.unshift({ slug, date: todayStr(), timestamp: Date.now() });
+  await write(KEYS.prayerReads, reads);
+}
+
+export async function getPrayerReadCount(): Promise<number> {
+  const reads = await read<PrayerRead>(KEYS.prayerReads);
+  return reads.length;
+}
+
+// ─── Bookmarks ────────────────────────────────────────────────────────────────
 
 export async function addBookmark(pageIndex: number, label?: string): Promise<void> {
   const list = await read<Bookmark>(KEYS.bookmarks);
@@ -48,6 +149,8 @@ export async function listBookmarks(): Promise<{ id: string; page_index: number;
   const list = await read<Bookmark>(KEYS.bookmarks);
   return list.map(({ id, page_index, label }) => ({ id, page_index, label }));
 }
+
+// ─── Highlights ───────────────────────────────────────────────────────────────
 
 export async function addHighlight(book: string, chapter: number, verse: number, color: string): Promise<void> {
   const list = await read<Highlight>(KEYS.highlights);
@@ -67,19 +170,7 @@ export async function listHighlights(): Promise<{ id: string; book: string; chap
   return list.map(({ id, book, chapter, verse, color }) => ({ id, book, chapter, verse, color }));
 }
 
-export async function recordStreakToday(): Promise<void> {
-  const today = new Date().toISOString().slice(0, 10);
-  const days = await read<string>(KEYS.streak);
-  if (!days.includes(today)) {
-    days.push(today);
-    await write(KEYS.streak, days);
-  }
-}
-
-export async function getStreakCount(): Promise<number> {
-  const days = await read<string>(KEYS.streak);
-  return days.length;
-}
+// ─── Prayer intentions ────────────────────────────────────────────────────────
 
 export async function savePrayerIntention(intention: string, prayerText: string): Promise<PrayerIntention> {
   const list = await read<PrayerIntention>(KEYS.prayerIntentions);
@@ -102,6 +193,8 @@ export async function deletePrayerIntention(id: string): Promise<void> {
   const list = await read<PrayerIntention>(KEYS.prayerIntentions);
   await write(KEYS.prayerIntentions, list.filter((p) => p.id !== id));
 }
+
+// ─── Prayer bookmarks ─────────────────────────────────────────────────────────
 
 export async function listPrayerBookmarks(): Promise<PrayerBookmark[]> {
   return read<PrayerBookmark>(KEYS.prayerBookmarks);
