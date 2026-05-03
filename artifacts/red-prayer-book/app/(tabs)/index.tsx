@@ -11,8 +11,79 @@ import { BADGE_DEFS, getAllBadgeProgress } from "@/lib/badges";
 import { recordStreakToday } from "@/lib/db";
 import { incrementBadge } from "@/lib/badges";
 import type { BadgeDef } from "@/lib/badges";
+import { getCurrentHour, formatTime, type CanonicalHour } from "@/lib/canonicalHours";
 
 type MCI = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+
+function CanonicalHoursWidget() {
+  const [hour, setHour] = useState<CanonicalHour>(getCurrentHour);
+  const [clock, setClock] = useState(formatTime);
+
+  useEffect(() => {
+    const tick = () => {
+      setHour(getCurrentHour());
+      setClock(formatTime());
+    };
+    const id = setInterval(tick, 60000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <Pressable
+      onPress={() => router.push(`/hours?id=${hour.id}`)}
+      style={({ pressed }) => ({
+        marginHorizontal: spacing.m,
+        marginBottom: spacing.m,
+        borderRadius: radii.l,
+        borderWidth: 1,
+        borderColor: hour.accentColor,
+        overflow: "hidden",
+        opacity: pressed ? 0.85 : 1,
+      })}
+    >
+      {/* Accent top strip */}
+      <View style={{ backgroundColor: hour.accentColor, paddingHorizontal: spacing.m, paddingVertical: spacing.s, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+          <MaterialCommunityIcons name={hour.icon as MCI} size={14} color="rgba(245,235,221,0.9)" />
+          <Text style={{ color: "rgba(245,235,221,0.9)", fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" }}>
+            Current Hour of Prayer
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.ivoryVellum, opacity: 0.7 }} />
+          <Text style={{ color: "rgba(245,235,221,0.7)", fontSize: 11 }}>{clock}</Text>
+        </View>
+      </View>
+
+      {/* Body */}
+      <View style={{ backgroundColor: C.surfaceElevated, padding: spacing.m, flexDirection: "row", alignItems: "center", gap: spacing.m }}>
+        <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: hour.accentColor, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" }}>
+          <MaterialCommunityIcons name={hour.icon as MCI} size={24} color={C.ivoryVellum} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 18 }}>
+            {hour.name}
+          </Text>
+          <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 12, fontStyle: "italic", marginTop: 2 }}>
+            {hour.subtitle}
+          </Text>
+          <Text style={{ color: C.textMuted, fontSize: 11, marginTop: 4, lineHeight: 16 }} numberOfLines={2}>
+            {hour.shortPrayer}
+          </Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={20} color={C.sacredGold} />
+      </View>
+
+      {/* Time label footer */}
+      <View style={{ backgroundColor: C.surface, paddingHorizontal: spacing.m, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+        <MaterialCommunityIcons name="clock-outline" size={11} color={C.textMuted} />
+        <Text style={{ color: C.textMuted, fontSize: 11 }}>{hour.timeLabel}</Text>
+        <Text style={{ color: C.hairline, marginHorizontal: 4 }}>·</Text>
+        <Text style={{ color: C.textMuted, fontFamily: "serif", fontStyle: "italic", fontSize: 11 }}>{hour.greekName}</Text>
+      </View>
+    </Pressable>
+  );
+}
 
 const TILES: { icon: MCI; label: string; target: string }[] = [
   { icon: "weather-sunny", label: "Morning\nPrayer", target: "morning" },
@@ -133,6 +204,9 @@ export default function Home() {
             </View>
           </View>
         </View>
+
+        {/* Canonical Hours Widget */}
+        <CanonicalHoursWidget />
 
         {/* Quick Tiles 2×3 */}
         <View

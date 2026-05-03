@@ -37,6 +37,7 @@ artifacts/red-prayer-book/
 │   │   ├── calendar.tsx             # Orthodox liturgical calendar (New/Old style)
 │   │   ├── bible.tsx                # Bible reader (John 1) with verse highlighting & commentary
 │   │   └── you.tsx                  # Profile: streak, 8 badges + progress rings, activity feed
+│   ├── hours.tsx                    # Canonical Hours prayer screen — full Divine Office with hour selector, prev/next nav, share
 │   ├── companion.tsx                # AI Spiritual Companion chat (Father Seraphim, SSE streaming)
 │   ├── settings.tsx                 # Settings sheet: notifications toggle, calendar style, about
 │   ├── bookmarks.tsx                # Saved bookmarks & Bible highlights
@@ -81,6 +82,7 @@ artifacts/red-prayer-book/
 - **Page-flip Prayer Book**: Swipe-to-turn pages with 3D perspective curl animation
 - **Orthodox Calendar**: Monthly grid, feast days, Old/New style toggle, tone of week, Sunday readings
 - **Bible Reader**: John 1 with verse long-press → highlight/copy/share/bookmark actions
+- **Canonical Hours** (`lib/canonicalHours.ts`, `app/hours.tsx`): Full Orthodox Divine Office — 7 canonical hours (Midnight Office, Matins, First, Third, Sixth, Ninth Hour, Vespers) each with name, Greek name, time range, accent color, scripture verse, full liturgical prayer text in elevated English. Live home screen widget auto-detects the current hour (updates every 60s), shows the hour name, subtitle, Greek name, live clock, and short prayer snippet. Taps through to `app/hours.tsx` — a full-screen prayer reader with a horizontal hour selector strip, hero card with scripture + intention, full prayer text, prev/next navigation, share button.
 - **AI Spiritual Companion** (`app/companion.tsx`): Full-screen chat with "Father Seraphim" — an Orthodox spiritual guide powered by Claude via Anthropic API. SSE streaming responses, conversation history persisted to PostgreSQL, 6 suggestion prompts on welcome screen. Entry banner on "You" tab.
 - **Compose a Prayer** (`app/intention.tsx`): User types a personal prayer intention → Claude composes a formal Orthodox prayer in liturgical English (SSE streamed). Prayer can be saved to AsyncStorage bookmarks and shared via native Share. 6 example intentions for inspiration. Saved prayers appear in Bookmarks screen under the "Prayers" tab (expandable cards with delete). Entry banner on "You" tab.
 - **Profile (You)**: Streak counter, 8 badge progress rings, "Add Your Church" modal, activity feed with tab filters
