@@ -15,6 +15,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { colors } from "@/theme/colors";
+import { initNotifications } from "@/lib/notifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,6 +37,17 @@ function RootLayoutNav() {
         name="saints/[id]"
         options={{ presentation: "modal", headerShown: false }}
       />
+      <Stack.Screen
+        name="settings"
+        options={{
+          presentation: "modal",
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="bookmarks"
+        options={{ presentation: "modal", headerShown: false }}
+      />
     </Stack>
   );
 }
@@ -51,6 +63,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
+      initNotifications();
     }
   }, [fontsLoaded, fontError]);
 
@@ -60,7 +73,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.surfaceDeep }}>
+          <GestureHandlerRootView
+            style={{ flex: 1, backgroundColor: colors.surfaceDeep }}
+          >
             <KeyboardProvider>
               <RootLayoutNav />
             </KeyboardProvider>

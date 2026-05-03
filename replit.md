@@ -1,13 +1,16 @@
 # Red Prayer Book
 
-An Orthodox Christian prayer app built with Expo (React Native, TypeScript, expo-router) for iOS and Android.
+An Orthodox Christian prayer mobile app built with Expo SDK 54, expo-router v6, React Native 0.81.5, TypeScript.
 
 ## Stack
 
 - **Framework**: Expo SDK 54, expo-router v6, React Native 0.81.5, React 19.1.0
-- **State**: Zustand (book state), AsyncStorage (bookmarks, highlights, streak)
+- **State**: Zustand (book state), AsyncStorage (bookmarks, highlights, streak, badges, notifications)
 - **Animation**: react-native-reanimated v4 (page-flip curl), react-native-gesture-handler v2
 - **Navigation**: expo-router file-based routing with 5-tab layout
+- **Icons**: `@expo/vector-icons` → MaterialCommunityIcons (tabs, tiles, UI)
+- **SVG**: `react-native-svg` → ProgressRing component for badge progress arcs
+- **Notifications**: `expo-notifications` ~0.32.17 (dynamic import, native-only, lazy)
 
 ## Brand
 
@@ -19,22 +22,23 @@ An Orthodox Christian prayer app built with Expo (React Native, TypeScript, expo
 | `deepOnyx` | `#0E0E10` |
 | `vesperPurple` | `#4A2C4E` |
 
-Brand tokens live in `artifacts/red-prayer-book/theme/colors.ts`.  
-The scaffold's `constants/colors.ts` mirrors them in the `light` key for `useColors()` hook compatibility.
+Brand tokens live in `artifacts/red-prayer-book/theme/colors.ts`.
 
 ## Architecture
 
 ```
 artifacts/red-prayer-book/
 ├── app/
-│   ├── _layout.tsx                  # Root layout — GestureHandler, SafeArea, QueryClient
+│   ├── _layout.tsx                  # Root layout — GestureHandler, SafeArea, QueryClient, notifications init
 │   ├── (tabs)/
-│   │   ├── _layout.tsx              # 5-tab nav (Home, Prayers, Calendar, Bible, You)
-│   │   ├── index.tsx                # Home screen
-│   │   ├── prayers.tsx              # Book / page-flip prayer reader
+│   │   ├── _layout.tsx              # 5-tab nav (Home, Prayers, Calendar, Bible, You) — MCI vector icons
+│   │   ├── index.tsx                # Home: Today's Prayer card, 2×3 quick tiles, prayer categories, badges
+│   │   ├── prayers.tsx              # Prayer Book with 3D page-flip reader
 │   │   ├── calendar.tsx             # Orthodox liturgical calendar (New/Old style)
-│   │   ├── bible.tsx                # Bible reader with verse highlights
-│   │   └── you.tsx                  # Profile, streak, badges
+│   │   ├── bible.tsx                # Bible reader (John 1) with verse highlighting & commentary
+│   │   └── you.tsx                  # Profile: streak, 8 badges + progress rings, activity feed
+│   ├── settings.tsx                 # Settings sheet: notifications toggle, calendar style, about
+│   ├── bookmarks.tsx                # Saved bookmarks & Bible highlights
 │   ├── onboarding/[step].tsx        # 3-step onboarding
 │   ├── prayers/[slug].tsx           # Prayer detail modal
 │   └── saints/[id].tsx              # Saint detail modal
@@ -48,36 +52,47 @@ artifacts/red-prayer-book/
 │   │   ├── MonthGrid.tsx            # Monthly calendar grid
 │   │   └── DaySheet.tsx             # Day detail sheet (feast, readings, tone)
 │   ├── home/
-│   │   ├── TodaysPrayerCard.tsx     # Home hero card with Saint Nicholas icon
-│   │   └── QuickTile.tsx            # Quick-action tile button
+│   │   ├── TodaysPrayerCard.tsx     # (legacy) Home hero card
+│   │   └── QuickTile.tsx            # (legacy) Quick-action tile
 │   └── ui/
 │       ├── CrossDivider.tsx         # ✧ ✟ ✧ decorative divider
-│       └── FiligreeFrame.tsx        # Byzantine filigree border frame
+│       ├── FiligreeFrame.tsx        # Byzantine filigree border frame
+│       ├── ProgressRing.tsx         # SVG circular progress arc (react-native-svg)
+│       └── BadgeItem.tsx            # Badge with ProgressRing, locked/earned/progress states
 ├── lib/
 │   ├── store.ts                     # Zustand book state (currentIndex, totalPages)
 │   ├── db.ts                        # AsyncStorage persistence (bookmarks, highlights, streak)
+│   ├── badges.ts                    # 8 badge definitions + AsyncStorage progress tracking
+│   ├── notifications.ts             # Morning/evening notification scheduling (lazy expo-notifications)
 │   ├── pages.ts                     # Prayer book page data
 │   ├── audio.ts                     # Audio SFX stubs (expo-audio ready)
 │   └── calendar.ts                  # Orthodox calendar data + Julian/Gregorian shift
 └── theme/
     ├── colors.ts                    # Brand color tokens
-    ├── typography.ts                # Font scale (h1–caption, smallCaps)
+    ├── typography.ts                # Font scale
     └── spacing.ts                   # Spacing/radius/shadow tokens
 ```
 
 ## Key Features
 
-- **Page-flip book**: Swipe-to-turn pages with 3D perspective curl animation (Reanimated `SharedValue` + `GestureDetector`)
-- **Orthodox Calendar**: Monthly grid with feast days, tone of the week, Old/New style toggle, per-day sheet with epistle + gospel readings
-- **Bible Reader**: John chapter 1 with verse long-press highlighting (saved to AsyncStorage)
-- **Profile**: Streak counter, 8 spiritual badges, activity tabs
-- **Onboarding**: 3-step illustrated onboarding flow
+- **Home Screen**: Today's Prayer hero card (Saint Nicholas icon + quote), 2×3 quick-action tiles with MaterialCommunityIcons, Prayer Categories list, badge progress preview
+- **Page-flip Prayer Book**: Swipe-to-turn pages with 3D perspective curl animation
+- **Orthodox Calendar**: Monthly grid, feast days, Old/New style toggle, tone of week, Sunday readings
+- **Bible Reader**: John 1 with verse long-press → highlight/copy/share/bookmark actions
+- **Profile (You)**: Streak counter, 8 badge progress rings, "Add Your Church" modal, activity feed with tab filters
+- **Settings**: Notification toggles (Morning/Evening prayer reminders), calendar style, about — presented as modal sheet
+- **Bookmarks**: Saved prayer pages + Bible verse highlights
+- **Badge System** (`lib/badges.ts`): 8 badges (Share Verses, Whole Bible, Notes, Days Fasted, Daily Prayers, App Streak, Calendar, Vespers). Each has a max threshold, color, icon, and progress tracking via AsyncStorage. Badges are earned — not auto-shown. `BadgeItem` renders a ProgressRing (SVG arc), locked/earned/progress visual states.
+- **Notifications** (`lib/notifications.ts`): Morning/Evening local notifications scheduled via `expo-notifications` using lazy dynamic import (Platform.OS !== 'web' guard). Settings persist to AsyncStorage.
 
-## Assets
-
-- `assets/images/icon.png` — AI-generated Byzantine crimson cross app icon
-- `assets/images/splash.png` — AI-generated 9:16 splash screen
-- `assets/images/saint-nicholas.png` — AI-generated Orthodox icon painting
+## Tab Bar Icons (MaterialCommunityIcons)
+| Tab | Icon (focused) | Icon (unfocused) |
+|-----|---------------|-----------------|
+| Home | `home` | `home-outline` |
+| Prayers | `cross` | `cross` |
+| Calendar | `calendar-month` | `calendar-month-outline` |
+| Bible | `book-open-variant` | `book-open-outline` |
+| You | `account-circle` | `account-circle-outline` |
 
 ## Packages Added Beyond Scaffold
 
@@ -85,5 +100,15 @@ artifacts/red-prayer-book/
 |---------|---------|
 | `zustand` | Lightweight book state store |
 | `expo-audio` | SFX stubs (page flip, riffle) |
-| `expo-sqlite` | Installed but unused (db uses AsyncStorage for web compat) |
-| `@gorhom/bottom-sheet` | Installed, sheets use native Modal instead for Expo Go |
+| `@gorhom/bottom-sheet` | Installed (sheets use native Modal in Expo Go) |
+| `react-native-svg` | ProgressRing SVG arcs for badge system |
+| `expo-notifications` ~0.32.17 | Morning/evening prayer local notifications |
+
+## Design References
+UI-UX reference images saved at `attached_assets/uiux/`:
+- `home.png` — Home screen layout
+- `settings.png` — You/profile screen
+- `bible.png` — Bible reader
+- `calander.png` — Calendar grid
+- `guidelines.png` / `guidelines_2.png` — Brand system (colors, typography, iconography)
+- `banner.png` — Marketing banner with app preview

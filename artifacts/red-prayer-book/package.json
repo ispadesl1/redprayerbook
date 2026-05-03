@@ -58,6 +58,7 @@
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.13",
     "expo-audio": "^1.1.1",
+    "expo-notifications": "^0.32.17",
     "expo-sqlite": "^16.0.10",
     "zustand": "^5.0.12"
   }
