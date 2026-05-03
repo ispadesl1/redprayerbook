@@ -2,11 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Bookmark = { id: string; page_index: number; label: string | null; created_at: number };
 type Highlight = { id: string; book: string; chapter: number; verse: number; color: string; created_at: number };
+export type PrayerIntention = { id: string; intention: string; prayerText: string; created_at: number };
 
 const KEYS = {
   bookmarks: 'rpb:bookmarks',
   highlights: 'rpb:highlights',
   streak: 'rpb:streak',
+  prayerIntentions: 'rpb:prayer_intentions',
 };
 
 async function read<T>(key: string): Promise<T[]> {
@@ -68,4 +70,26 @@ export async function recordStreakToday(): Promise<void> {
 export async function getStreakCount(): Promise<number> {
   const days = await read<string>(KEYS.streak);
   return days.length;
+}
+
+export async function savePrayerIntention(intention: string, prayerText: string): Promise<PrayerIntention> {
+  const list = await read<PrayerIntention>(KEYS.prayerIntentions);
+  const item: PrayerIntention = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    intention,
+    prayerText,
+    created_at: Date.now(),
+  };
+  list.unshift(item);
+  await write(KEYS.prayerIntentions, list);
+  return item;
+}
+
+export async function listPrayerIntentions(): Promise<PrayerIntention[]> {
+  return read<PrayerIntention>(KEYS.prayerIntentions);
+}
+
+export async function deletePrayerIntention(id: string): Promise<void> {
+  const list = await read<PrayerIntention>(KEYS.prayerIntentions);
+  await write(KEYS.prayerIntentions, list.filter((p) => p.id !== id));
 }

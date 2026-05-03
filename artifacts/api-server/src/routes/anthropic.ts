@@ -134,4 +134,56 @@ router.post("/anthropic/conversations/:conversationId/messages", async (req: Req
   }
 });
 
+const COMPOSE_PRAYER_PROMPT = `You are a learned Orthodox Christian monk and hymnographer. Your only task is to compose a beautiful, formal Orthodox prayer in response to the prayer intention given by the user.
+
+Requirements:
+- Address God directly (Lord, O Lord, O Most Holy Trinity, O Theotokos, etc.) as appropriate to the intention
+- Use elevated, reverent, liturgical English in the tradition of Orthodox prayer (similar to the Divine Liturgy of St. John Chrysostom)
+- Incorporate scripture or patristic themes naturally where fitting
+- Structure: Invocation → Acknowledgement of God's nature → The petition → Closing doxology
+- Length: 100–250 words — substantial but not excessive
+- Do NOT include a title, label, or preamble. Begin immediately with the prayer itself (e.g. "O Lord Jesus Christ...")
+- End with "Amen."
+
+Compose only the prayer. Nothing else.`;
+
+router.post("/anthropic/compose-prayer", async (req: Request, res: Response) => {
+  try {
+    const { intention } = req.body as { intention?: string };
+    if (!intention || typeof intention !== "string" || !intention.trim()) {
+      res.status(400).json({ error: "intention is required" });
+      return;
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const stream = await anthropic.messages.stream({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1024,
+      system: COMPOSE_PRAYER_PROMPT,
+      messages: [{ role: "user", content: `Prayer intention: ${intention.trim()}` }],
+    });
+
+    for await (const event of stream) {
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        res.write(`data: ${JSON.stringify({ type: "delta", text: event.delta.text })}\n\n`);
+      }
+    }
+
+    res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+    res.end();
+  } catch (err) {
+    req.log.error(err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to compose prayer" });
+    } else {
+      res.write(`data: ${JSON.stringify({ type: "error", message: "Stream failed" })}\n\n`);
+      res.end();
+    }
+  }
+});
+
 export default router;

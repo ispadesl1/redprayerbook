@@ -42,6 +42,7 @@ artifacts/red-prayer-book/
 │   ├── bookmarks.tsx                # Saved bookmarks & Bible highlights
 │   ├── onboarding/[step].tsx        # 3-step onboarding
 │   ├── prayers/[slug].tsx           # Prayer detail modal
+│   ├── intention.tsx                # Compose a Prayer: intention input → streamed Orthodox prayer → save/share
 │   └── saints/[id].tsx              # Saint detail modal
 ├── components/
 │   ├── book/
@@ -81,6 +82,7 @@ artifacts/red-prayer-book/
 - **Orthodox Calendar**: Monthly grid, feast days, Old/New style toggle, tone of week, Sunday readings
 - **Bible Reader**: John 1 with verse long-press → highlight/copy/share/bookmark actions
 - **AI Spiritual Companion** (`app/companion.tsx`): Full-screen chat with "Father Seraphim" — an Orthodox spiritual guide powered by Claude via Anthropic API. SSE streaming responses, conversation history persisted to PostgreSQL, 6 suggestion prompts on welcome screen. Entry banner on "You" tab.
+- **Compose a Prayer** (`app/intention.tsx`): User types a personal prayer intention → Claude composes a formal Orthodox prayer in liturgical English (SSE streamed). Prayer can be saved to AsyncStorage bookmarks and shared via native Share. 6 example intentions for inspiration. Saved prayers appear in Bookmarks screen under the "Prayers" tab (expandable cards with delete). Entry banner on "You" tab.
 - **Profile (You)**: Streak counter, 8 badge progress rings, "Add Your Church" modal, activity feed with tab filters
 - **Settings**: Notification toggles (Morning/Evening prayer reminders), calendar style, about — presented as modal sheet
 - **Bookmarks**: Saved prayer pages + Bible verse highlights
@@ -105,6 +107,7 @@ Express + Drizzle ORM + PostgreSQL. Routes:
 - `DELETE /api/anthropic/conversations/:id` — delete conversation
 - `GET /api/anthropic/conversations/:id/messages` — list messages
 - `POST /api/anthropic/conversations/:id/messages` — send user message + stream AI response (SSE)
+- `POST /api/anthropic/compose-prayer` — takes `{ intention }`, streams back a composed Orthodox prayer
 
 DB tables: `conversations`, `messages` (in `lib/db/src/schema/`).
 

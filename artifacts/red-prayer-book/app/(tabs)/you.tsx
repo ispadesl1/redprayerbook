@@ -127,6 +127,48 @@ export default function You() {
           </View>
         </View>
 
+        {/* Compose a Prayer banner */}
+        <Pressable
+          onPress={() => router.push("/intention")}
+          style={({ pressed }) => ({
+            flexDirection: "row",
+            alignItems: "center",
+            gap: spacing.m,
+            paddingVertical: spacing.m,
+            paddingHorizontal: spacing.m,
+            borderColor: C.hairline,
+            borderWidth: 1,
+            borderRadius: radii.m,
+            marginBottom: spacing.s,
+            backgroundColor: pressed ? C.surface : C.surfaceElevated,
+            opacity: pressed ? 0.9 : 1,
+          })}
+        >
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: C.byzantineCrimson,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: C.sacredGold,
+            }}
+          >
+            <MaterialCommunityIcons name="hands-pray" size={22} color={C.sacredGold} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: C.textPrimary, fontFamily: "serif", fontWeight: "700", fontSize: 15 }}>
+              Compose a Prayer
+            </Text>
+            <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 2 }}>
+              Enter your intention — receive a personal Orthodox prayer
+            </Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={20} color={C.sacredGold} />
+        </Pressable>
+
         {/* AI Spiritual Companion banner */}
         <Pressable
           onPress={() => router.push("/companion")}
