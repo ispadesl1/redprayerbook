@@ -70,6 +70,54 @@ export async function fetchChapter(bookId: string, chapter: number): Promise<Bib
   }
 }
 
+export type SearchResult = {
+  bookId: string;
+  chapter: number;
+  verse: number;
+  text: string;
+};
+
+/**
+ * Search all cached Bible chapters for verses containing the given keyword.
+ * Only searches chapters that have already been fetched and cached.
+ */
+export async function searchBibleCache(query: string): Promise<SearchResult[]> {
+  if (!query.trim()) return [];
+
+  const normalized = query.trim().toLowerCase();
+  const results: SearchResult[] = [];
+
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const bibleKeys = keys.filter((k) => k.startsWith('rpb:bible:'));
+
+    const entries = await AsyncStorage.multiGet(bibleKeys);
+
+    for (const [, value] of entries) {
+      if (!value) continue;
+      try {
+        const chapter: BibleChapter = JSON.parse(value);
+        for (const v of chapter.verses) {
+          if (v.text.toLowerCase().includes(normalized)) {
+            results.push({
+              bookId: chapter.bookId,
+              chapter: chapter.chapter,
+              verse: v.verse,
+              text: v.text,
+            });
+          }
+        }
+      } catch {
+        // skip malformed cache entries
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to search Bible cache:', err);
+  }
+
+  return results;
+}
+
 /**
  * Clear all cached Bible chapters from AsyncStorage.
  */

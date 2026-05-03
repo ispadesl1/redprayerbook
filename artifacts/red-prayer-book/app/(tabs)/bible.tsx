@@ -10,6 +10,7 @@ import {
   Dimensions,
   Animated,
   Clipboard,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -18,8 +19,8 @@ import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
 import { addHighlight, listHighlights } from "@/lib/db";
 import { incrementBadge } from "@/lib/badges";
-import { BIBLE_SECTIONS, type BibleBook } from "@/lib/bible-structure";
-import { fetchChapter, type BibleChapter, type BibleVerse } from "@/lib/bible-fetch";
+import { BIBLE_SECTIONS, getBookById, type BibleBook } from "@/lib/bible-structure";
+import { fetchChapter, searchBibleCache, type BibleChapter, type BibleVerse, type SearchResult } from "@/lib/bible-fetch";
 
 const { width } = Dimensions.get("window");
 
@@ -72,6 +73,50 @@ export default function Bible() {
   const [highlightedVerses, setHighlightedVerses] = useState<Set<number>>(new Set());
   const [selectedVerse, setSelectedVerse] = useState<number | null>(null);
   const [actionModal, setActionModal] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchVersion = useRef(0);
+
+  // Cleanup pending search timer on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+  }, []);
+
+  // Debounced search across cached chapters
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    setSearchResults([]);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!text.trim()) {
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const version = ++searchVersion.current;
+    searchTimer.current = setTimeout(async () => {
+      const results = await searchBibleCache(text);
+      if (version === searchVersion.current) {
+        setSearchResults(results);
+        setSearching(false);
+      }
+    }, 300);
+  }, []);
+
+  const handleSearchResultPress = (result: SearchResult) => {
+    const book = getBookById(result.bookId);
+    if (!book) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSelectedBook(book);
+    setSelectedChapter(result.chapter);
+    setSearchQuery("");
+    setSearchResults([]);
+    setView("reading");
+  };
 
   // Load highlights for current chapter
   const loadHighlights = useCallback(async (bookId: string, chapter: number) => {
@@ -161,6 +206,7 @@ export default function Bible() {
 
   const renderBooksView = () => {
     const sections = BIBLE_SECTIONS.filter(s => s.testament === testament);
+    const isSearching = searchQuery.trim().length > 0;
     
     return (
       <View style={{ flex: 1 }}>
@@ -169,6 +215,103 @@ export default function Bible() {
           <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 24, color: C.sacredGold }}>Holy Scripture</Text>
         </View>
 
+        {/* Search Bar */}
+        <View style={{ paddingHorizontal: spacing.m, marginBottom: spacing.s }}>
+          <View style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: C.surfaceElevated,
+            borderRadius: radii.m,
+            borderWidth: 1,
+            borderColor: searchQuery ? C.sacredGold : C.hairline,
+            paddingHorizontal: spacing.s,
+            height: 40,
+          }}>
+            <MaterialCommunityIcons name="magnify" size={18} color={searchQuery ? C.sacredGold : C.textMuted} style={{ marginRight: 6 }} />
+            <TextInput
+              value={searchQuery}
+              onChangeText={handleSearchChange}
+              placeholder="Search verses…"
+              placeholderTextColor={C.textMuted}
+              style={{ flex: 1, color: C.textPrimary, fontSize: 14, fontFamily: "serif" }}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
+              autoCorrect={false}
+              autoCapitalize="none"
+            />
+            {searching && <ActivityIndicator size="small" color={C.sacredGold} style={{ marginLeft: 6 }} />}
+            {!searching && searchQuery.length > 0 && (
+              <Pressable onPress={() => handleSearchChange("")} hitSlop={8}>
+                <MaterialCommunityIcons name="close-circle" size={16} color={C.textMuted} />
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        {/* Search Results */}
+        {isSearching && (
+          <View style={{ flex: 1 }}>
+            {!searching && searchResults.length === 0 ? (
+              <View style={{ flex: 1, alignItems: "center", paddingTop: spacing.xl }}>
+                <MaterialCommunityIcons name="book-search-outline" size={40} color={C.textMuted} />
+                <Text style={{ color: C.textMuted, marginTop: spacing.s, fontSize: 14 }}>No cached verses found</Text>
+                <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 4, textAlign: "center", paddingHorizontal: spacing.l }}>
+                  Browse a chapter first to cache it for search
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                data={searchResults}
+                keyExtractor={(item) => `${item.bookId}-${item.chapter}-${item.verse}`}
+                contentContainerStyle={{ paddingHorizontal: spacing.m, paddingBottom: 160 }}
+                keyboardShouldPersistTaps="handled"
+                ListHeaderComponent={
+                  searchResults.length > 0 ? (
+                    <Text style={{ color: C.textMuted, fontSize: 12, marginBottom: spacing.s }}>
+                      {searchResults.length} result{searchResults.length !== 1 ? "s" : ""}
+                    </Text>
+                  ) : null
+                }
+                renderItem={({ item }) => {
+                  const book = getBookById(item.bookId);
+                  if (!book) return null;
+                  const query = searchQuery.trim().toLowerCase();
+                  const textLower = item.text.toLowerCase();
+                  const matchIdx = textLower.indexOf(query);
+                  const before = item.text.slice(0, matchIdx);
+                  const match = item.text.slice(matchIdx, matchIdx + query.length);
+                  const after = item.text.slice(matchIdx + query.length);
+                  return (
+                    <Pressable
+                      onPress={() => handleSearchResultPress(item)}
+                      style={({ pressed }) => ({
+                        backgroundColor: pressed ? "rgba(212,175,55,0.08)" : C.surfaceElevated,
+                        borderRadius: radii.m,
+                        borderWidth: 1,
+                        borderColor: C.hairline,
+                        padding: spacing.m,
+                        marginBottom: spacing.s,
+                      })}
+                    >
+                      <Text style={{ color: C.sacredGold, fontSize: 12, fontWeight: "700", marginBottom: 4 }}>
+                        {book.name} {item.chapter}:{item.verse}
+                      </Text>
+                      <Text style={{ color: C.textSecondary, fontSize: 13, fontFamily: "serif", lineHeight: 20 }} numberOfLines={3}>
+                        <Text>{before}</Text>
+                        <Text style={{ color: C.sacredGold, fontWeight: "700" }}>{match}</Text>
+                        <Text>{after}</Text>
+                      </Text>
+                    </Pressable>
+                  );
+                }}
+              />
+            )}
+          </View>
+        )}
+
+        {/* Normal Books Browse (hidden during search) */}
+        {!isSearching && (
+          <>
         {/* Divider */}
         <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.m, marginBottom: spacing.m }}>
           <View style={{ flex: 1, height: 1, backgroundColor: C.hairline }} />
@@ -240,6 +383,8 @@ export default function Bible() {
         <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: C.surface, borderTopWidth: 1, borderTopColor: C.hairline, padding: spacing.m, alignItems: "center" }}>
           <Text style={{ color: C.textSecondary, fontSize: 12 }}>73 Books • OT & NT</Text>
         </View>
+          </>
+        )}
       </View>
     );
   };
