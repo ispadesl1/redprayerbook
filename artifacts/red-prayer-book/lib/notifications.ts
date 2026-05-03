@@ -25,6 +25,9 @@ export type NotifSettings = {
   morning: boolean;
   morningHour: number;
   morningMinute: number;
+  midday: boolean;
+  middayHour: number;
+  middayMinute: number;
   evening: boolean;
   eveningHour: number;
   eveningMinute: number;
@@ -34,8 +37,11 @@ export const DEFAULT_SETTINGS: NotifSettings = {
   morning: false,
   morningHour: 7,
   morningMinute: 0,
+  midday: false,
+  middayHour: 12,
+  middayMinute: 0,
   evening: false,
-  eveningHour: 19,
+  eveningHour: 21,
   eveningMinute: 0,
 };
 
@@ -68,6 +74,12 @@ export async function requestPermissions(): Promise<boolean> {
   }
 }
 
+function fmt12(hour: number, minute: number): string {
+  const ampm = hour < 12 ? 'AM' : 'PM';
+  const h = hour % 12 === 0 ? 12 : hour % 12;
+  return `${h}:${String(minute).padStart(2, '0')} ${ampm}`;
+}
+
 async function applySchedule(s: NotifSettings): Promise<void> {
   try {
     const N = await import('expo-notifications');
@@ -76,9 +88,10 @@ async function applySchedule(s: NotifSettings): Promise<void> {
     if (s.morning) {
       await N.scheduleNotificationAsync({
         content: {
-          title: '✟ Morning Prayer',
-          body: 'Begin your day in peace. Lord, grant me to greet the coming day with prayer.',
+          title: '☀ Morning Prayers',
+          body: 'Begin your day with the Trisagion and morning prayers.',
           sound: true,
+          data: { slug: 'morning-trisagion', screen: 'prayer' },
         },
         trigger: {
           type: N.SchedulableTriggerInputTypes.DAILY,
@@ -88,12 +101,29 @@ async function applySchedule(s: NotifSettings): Promise<void> {
       });
     }
 
+    if (s.midday) {
+      await N.scheduleNotificationAsync({
+        content: {
+          title: '◎ Midday Prayer',
+          body: `${fmt12(s.middayHour, s.middayMinute)} · Pause for a moment of prayer.`,
+          sound: true,
+          data: { slug: 'midday-prayer', screen: 'prayer' },
+        },
+        trigger: {
+          type: N.SchedulableTriggerInputTypes.DAILY,
+          hour: s.middayHour,
+          minute: s.middayMinute,
+        },
+      });
+    }
+
     if (s.evening) {
       await N.scheduleNotificationAsync({
         content: {
-          title: '☾ Evening Prayer',
-          body: 'End your day with prayer. Grant us refreshment of body and soul.',
+          title: '☽ Evening Prayers',
+          body: 'Close your day with Evening Prayers and thanksgiving.',
           sound: true,
+          data: { slug: 'evening-trisagion', screen: 'prayer' },
         },
         trigger: {
           type: N.SchedulableTriggerInputTypes.DAILY,
