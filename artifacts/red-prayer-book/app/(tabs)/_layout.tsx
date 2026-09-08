@@ -4,16 +4,25 @@ import { BlurView } from "expo-blur";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors as C } from "@/theme/colors";
+import { fonts, type } from "@/theme/typography";
+import { hitTarget } from "@/theme/spacing";
 
 type MCI = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 
 function TabIcon({ name, focused }: { name: MCI; focused: boolean }) {
   return (
-    <View style={{ alignItems: "center", justifyContent: "center", width: 28, height: 28 }}>
+    <View
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: hitTarget,
+        minHeight: 28,
+      }}
+    >
       <MaterialCommunityIcons
         name={name}
         size={24}
-        color={focused ? C.sacredGold : C.textSecondary}
+        color={focused ? C.sacredGold : C.textMuted}
       />
     </View>
   );
@@ -23,42 +32,58 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const bottomPad = isWeb ? 16 : Math.max(insets.bottom, 8);
+  const barHeight = isWeb ? 84 : 52 + bottomPad;
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
+        animation: "none",
         tabBarShowLabel: true,
         tabBarActiveTintColor: C.sacredGold,
-        tabBarInactiveTintColor: C.textSecondary,
+        tabBarInactiveTintColor: C.textMuted,
         tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: "600",
-          letterSpacing: 0.8,
-          textTransform: "uppercase",
+          ...type.tabLabel,
+          fontFamily: fonts.bodySemi,
           marginTop: 2,
+        },
+        tabBarItemStyle: {
+          minHeight: hitTarget,
+          paddingTop: 4,
         },
         tabBarStyle: {
           position: "absolute",
           backgroundColor: isIOS ? "transparent" : C.surfaceDeep,
           borderTopColor: C.hairline,
-          borderTopWidth: 1,
-          height: isWeb ? 84 : 54 + insets.bottom,
-          paddingBottom: isWeb ? 24 : insets.bottom,
-          paddingTop: 6,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          height: barHeight,
+          paddingBottom: bottomPad,
+          paddingTop: 4,
           elevation: 0,
         },
         tabBarBackground: () =>
           isIOS ? (
             <BlurView
-              intensity={90}
+              intensity={48}
               tint="dark"
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: "rgba(14,14,16,0.75)" },
+                { backgroundColor: C.overlayOnyx78 },
               ]}
             />
-          ) : null,
+          ) : (
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  backgroundColor: C.surfaceDeep,
+                  borderTopWidth: StyleSheet.hairlineWidth,
+                  borderTopColor: C.hairline,
+                },
+              ]}
+            />
+          ),
       }}
     >
       <Tabs.Screen

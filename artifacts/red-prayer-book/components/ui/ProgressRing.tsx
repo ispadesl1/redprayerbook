@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { colors } from '@/theme/colors';
 
 type Props = {
   progress: number;
@@ -14,7 +15,7 @@ export function ProgressRing({
   color,
   size = 72,
   strokeWidth = 4,
-  bgStroke = 'rgba(255,255,255,0.1)',
+  bgStroke = colors.overlayWhite10,
 }: Props) {
   const r = (size - strokeWidth) / 2;
   const cx = size / 2;

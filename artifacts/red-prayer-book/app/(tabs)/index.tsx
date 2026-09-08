@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
-import { ScrollView, View, Text, Pressable, Image } from "react-native";
+import { ScrollView, View, Text, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { CrossDivider } from "@/components/ui/CrossDivider";
 import { BadgeItem } from "@/components/ui/BadgeItem";
+import { PressableScale } from "@/components/ui/PressableScale";
+import { FadeIn } from "@/components/ui/FadeIn";
+import { TodaysPrayerCard } from "@/components/home/TodaysPrayerCard";
+import { QuickTile } from "@/components/home/QuickTile";
 import { colors as C } from "@/theme/colors";
-import { spacing, radii } from "@/theme/spacing";
+import { spacing, radii, motion } from "@/theme/spacing";
+import { fonts, type } from "@/theme/typography";
 import { BADGE_DEFS, getAllBadgeProgress } from "@/lib/badges";
 import { recordStreakToday } from "@/lib/db";
 import { incrementBadge } from "@/lib/badges";
@@ -30,59 +35,104 @@ function CanonicalHoursWidget() {
   }, []);
 
   return (
-    <Pressable
+    <PressableScale
       onPress={() => router.push(`/hours?id=${hour.id}`)}
-      style={({ pressed }) => ({
+      haptic
+      accessibilityLabel={`Current hour of prayer, ${hour.name}`}
+      style={{
         marginHorizontal: spacing.m,
-        marginBottom: spacing.m,
+        marginBottom: spacing.s,
         borderRadius: radii.l,
         borderWidth: 1,
         borderColor: hour.accentColor,
         overflow: "hidden",
-        opacity: pressed ? 0.85 : 1,
-      })}
+      }}
     >
-      {/* Accent top strip */}
-      <View style={{ backgroundColor: hour.accentColor, paddingHorizontal: spacing.m, paddingVertical: spacing.s, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+      <View
+        style={{
+          backgroundColor: hour.accentColor,
+          paddingHorizontal: spacing.m,
+          paddingVertical: spacing.s,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-          <MaterialCommunityIcons name={hour.icon as MCI} size={14} color="rgba(245,235,221,0.9)" />
-          <Text style={{ color: "rgba(245,235,221,0.9)", fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" }}>
+          <MaterialCommunityIcons name={hour.icon as MCI} size={14} color={C.textOnAccent} />
+          <Text style={{ ...type.label, color: C.textOnAccent }}>
             Current Hour of Prayer
           </Text>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xxs }}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.ivoryVellum, opacity: 0.7 }} />
-          <Text style={{ color: "rgba(245,235,221,0.7)", fontSize: 11 }}>{clock}</Text>
+          <Text style={{ color: C.overlayIvory70, fontFamily: fonts.body, fontSize: 11 }}>{clock}</Text>
         </View>
       </View>
 
-      {/* Body */}
-      <View style={{ backgroundColor: C.surfaceElevated, padding: spacing.m, flexDirection: "row", alignItems: "center", gap: spacing.m }}>
-        <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: hour.accentColor, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" }}>
+      <View
+        style={{
+          backgroundColor: C.surfaceElevated,
+          padding: spacing.m,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: spacing.m,
+        }}
+      >
+        <View
+          style={{
+            width: 52,
+            height: 52,
+            borderRadius: 26,
+            backgroundColor: hour.accentColor,
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: C.overlayWhite20,
+          }}
+        >
           <MaterialCommunityIcons name={hour.icon as MCI} size={24} color={C.ivoryVellum} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 18 }}>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontSize: 18, lineHeight: 22 }}>
             {hour.name}
           </Text>
-          <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 12, fontStyle: "italic", marginTop: 2 }}>
+          <Text
+            style={{
+              color: C.textSecondary,
+              fontFamily: fonts.serifItalic,
+              fontSize: 12,
+              marginTop: 2,
+            }}
+          >
             {hour.subtitle}
           </Text>
-          <Text style={{ color: C.textMuted, fontSize: 11, marginTop: 4, lineHeight: 16 }} numberOfLines={2}>
+          <Text
+            style={{ color: C.textMuted, fontFamily: fonts.body, fontSize: 11, marginTop: 4, lineHeight: 16 }}
+            numberOfLines={2}
+          >
             {hour.shortPrayer}
           </Text>
         </View>
         <MaterialCommunityIcons name="chevron-right" size={20} color={C.sacredGold} />
       </View>
 
-      {/* Time label footer */}
-      <View style={{ backgroundColor: C.surface, paddingHorizontal: spacing.m, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+      <View
+        style={{
+          backgroundColor: C.surface,
+          paddingHorizontal: spacing.m,
+          paddingVertical: spacing.xs,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: spacing.xs,
+        }}
+      >
         <MaterialCommunityIcons name="clock-outline" size={11} color={C.textMuted} />
-        <Text style={{ color: C.textMuted, fontSize: 11 }}>{hour.timeLabel}</Text>
+        <Text style={{ color: C.textMuted, fontFamily: fonts.body, fontSize: 11 }}>{hour.timeLabel}</Text>
         <Text style={{ color: C.hairline, marginHorizontal: 4 }}>·</Text>
-        <Text style={{ color: C.textMuted, fontFamily: "serif", fontStyle: "italic", fontSize: 11 }}>{hour.greekName}</Text>
+        <Text style={{ color: C.textMuted, fontFamily: fonts.serifItalic, fontSize: 11 }}>{hour.greekName}</Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -92,39 +142,54 @@ function FastingWidget() {
   const progress = status.period ? getPeriodProgress(status.period) : null;
 
   return (
-    <Pressable
+    <PressableScale
       onPress={() => router.push("/fasting")}
-      style={({ pressed }) => ({
+      haptic
+      accessibilityLabel={status.isFastFree ? "Fast-free period" : status.isFasting ? "Fasting today" : "Fasting calendar"}
+      style={{
         marginHorizontal: spacing.m,
-        marginBottom: spacing.m,
+        marginBottom: spacing.l,
         borderRadius: radii.l,
         borderWidth: 1,
         borderColor: color,
         overflow: "hidden",
-        opacity: pressed ? 0.85 : 1,
-      })}
+      }}
     >
-      {/* Header strip */}
-      <View style={{ backgroundColor: color, paddingHorizontal: spacing.m, paddingVertical: spacing.s, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+      <View
+        style={{
+          backgroundColor: color,
+          paddingHorizontal: spacing.m,
+          paddingVertical: spacing.s,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
           <MaterialCommunityIcons
             name={status.isFastFree ? "party-popper" : status.isFasting ? "fish" : "information-outline"}
             size={14}
-            color="rgba(245,235,221,0.9)"
+            color={C.textOnAccent}
           />
-          <Text style={{ color: "rgba(245,235,221,0.9)", fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" }}>
+          <Text style={{ ...type.label, color: C.textOnAccent }}>
             {status.isFastFree ? "Fast-Free Period" : status.isFasting ? "Fasting Today" : "Fasting Calendar"}
           </Text>
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={16} color="rgba(245,235,221,0.7)" />
+        <MaterialCommunityIcons name="chevron-right" size={16} color={C.overlayIvory70} />
       </View>
 
-      {/* Body */}
       <View style={{ backgroundColor: C.surfaceElevated, padding: spacing.m }}>
-        <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16, marginBottom: 2 }}>
+        <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontSize: 16, marginBottom: 2 }}>
           {status.label}
         </Text>
-        <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 12, marginBottom: status.rules.length ? spacing.xs : 0 }}>
+        <Text
+          style={{
+            color: C.textSecondary,
+            fontFamily: fonts.serif,
+            fontSize: 12,
+            marginBottom: status.rules.length ? spacing.xs : 0,
+          }}
+        >
           {status.sublabel}
         </Text>
         {status.rules[0] ? (
@@ -134,25 +199,34 @@ function FastingWidget() {
               size={13}
               color={color}
             />
-            <Text style={{ color: C.textMuted, fontSize: 12, flex: 1 }} numberOfLines={1}>
+            <Text
+              style={{ color: C.textMuted, fontFamily: fonts.body, fontSize: 12, flex: 1 }}
+              numberOfLines={1}
+            >
               {status.rules[0]}
             </Text>
           </View>
         ) : null}
 
-        {/* Progress bar for active period */}
         {progress && !status.isFastFree && (
           <View style={{ marginTop: spacing.s }}>
-            <View style={{ height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)" }}>
-              <View style={{ width: `${Math.round(progress.pct * 100)}%`, height: 3, borderRadius: 2, backgroundColor: color }} />
+            <View style={{ height: 3, borderRadius: 2, backgroundColor: C.overlayWhite10 }}>
+              <View
+                style={{
+                  width: `${Math.round(progress.pct * 100)}%`,
+                  height: 3,
+                  borderRadius: 2,
+                  backgroundColor: color,
+                }}
+              />
             </View>
-            <Text style={{ color: C.textMuted, fontSize: 10, marginTop: 2 }}>
+            <Text style={{ color: C.textMuted, fontFamily: fonts.body, fontSize: 10, marginTop: 2 }}>
               {progress.daysLeft} day{progress.daysLeft === 1 ? "" : "s"} remaining · {Math.round(progress.pct * 100)}% complete
             </Text>
           </View>
         )}
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -175,6 +249,9 @@ const CATEGORIES = [
 
 export default function Home() {
   const [badgeProgress, setBadgeProgress] = useState<Record<string, number>>({});
+  const { width } = useWindowDimensions();
+  const tileGap = spacing.s;
+  const tileSize = (width - spacing.m * 2 - tileGap * 2) / 3;
 
   useEffect(() => {
     (async () => {
@@ -197,143 +274,45 @@ export default function Home() {
   return (
     <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: C.surfaceDeep }}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingTop: spacing.s, paddingBottom: 108 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Today's Prayer Card */}
-        <View
-          style={{
-            margin: spacing.m,
-            borderRadius: radii.l,
-            borderWidth: 1,
-            borderColor: C.sacredGold,
-            overflow: "hidden",
-            backgroundColor: C.byzantineCrimson,
-          }}
-        >
-          {/* Filigree corners */}
-          {[
-            { top: 6, left: 8 },
-            { top: 6, right: 8 },
-            { bottom: 6, left: 8 },
-            { bottom: 6, right: 8 },
-          ].map((pos, i) => (
-            <Text
-              key={i}
-              style={{
-                position: "absolute",
-                ...(pos as any),
-                color: C.sacredGold,
-                fontSize: 11,
-                zIndex: 2,
-              }}
-            >
-              ❦
-            </Text>
-          ))}
+        <FadeIn delay={0}>
+          <TodaysPrayerCard quote="Lord, teach me to pray with my whole heart, and in Your will, not mine, be done." />
+        </FadeIn>
 
-          <View style={{ flexDirection: "row", minHeight: 160 }}>
-            {/* Saint icon */}
-            <View style={{ width: 130, backgroundColor: C.surfaceDeep }}>
-              <Image
-                source={require("@/assets/images/saint-nicholas.png")}
-                style={{ width: 130, height: "100%", minHeight: 160 }}
-                resizeMode="cover"
-              />
-            </View>
+        <FadeIn delay={motion.staggerMs}>
+          <CanonicalHoursWidget />
+        </FadeIn>
 
-            {/* Text */}
-            <View style={{ flex: 1, padding: spacing.m, justifyContent: "center" }}>
-              <Text
-                style={{
-                  fontFamily: "serif",
-                  fontWeight: "700",
-                  fontSize: 22,
-                  color: C.sacredGold,
-                  lineHeight: 26,
-                }}
-              >
-                Today's Prayer
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "serif",
-                  fontStyle: "italic",
-                  fontSize: 13,
-                  color: C.ivoryVellum,
-                  lineHeight: 20,
-                  marginTop: spacing.xs,
-                }}
-              >
-                Lord, teach me to pray with my whole heart, and in Your will, not mine, be done.
-              </Text>
-              <View style={{ flexDirection: "row", alignItems: "center", marginTop: spacing.s }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: C.sacredGold, opacity: 0.4 }} />
-                <Text style={{ color: C.sacredGold, marginHorizontal: 8, fontSize: 14 }}>✟</Text>
-                <View style={{ flex: 1, height: 1, backgroundColor: C.sacredGold, opacity: 0.4 }} />
-              </View>
-            </View>
-          </View>
-        </View>
+        <FadeIn delay={motion.staggerMs * 2}>
+          <FastingWidget />
+        </FadeIn>
 
-        {/* Canonical Hours Widget */}
-        <CanonicalHoursWidget />
-
-        {/* Fasting Widget */}
-        <FastingWidget />
-
-        {/* Quick Tiles 2×3 */}
         <View
           style={{
             flexDirection: "row",
             flexWrap: "wrap",
             paddingHorizontal: spacing.m,
-            gap: spacing.s,
+            gap: tileGap,
           }}
         >
           {TILES.map((t) => (
-            <Pressable
+            <QuickTile
               key={t.label}
+              icon={t.icon}
+              label={t.label}
+              size={tileSize}
               onPress={() => handleTilePress(t.target)}
-              style={({ pressed }) => ({
-                width: "31%",
-                aspectRatio: 1,
-                backgroundColor: pressed ? C.surface : C.byzantineCrimson,
-                borderColor: C.sacredGold,
-                borderWidth: 1,
-                borderRadius: radii.m,
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                opacity: pressed ? 0.85 : 1,
-              })}
-            >
-              <MaterialCommunityIcons name={t.icon} size={26} color={C.sacredGold} />
-              <Text
-                style={{
-                  color: C.sacredGold,
-                  fontSize: 9.5,
-                  letterSpacing: 0.8,
-                  textAlign: "center",
-                  fontWeight: "700",
-                  textTransform: "uppercase",
-                  lineHeight: 13,
-                }}
-              >
-                {t.label}
-              </Text>
-            </Pressable>
+            />
           ))}
         </View>
 
         <CrossDivider style={{ marginHorizontal: spacing.m, marginTop: spacing.xl }} />
 
-        {/* Prayer Categories */}
         <Text
           style={{
-            fontFamily: "serif",
-            fontWeight: "700",
-            fontSize: 22,
+            ...type.title,
             color: C.sacredGold,
             textAlign: "center",
             marginTop: spacing.s,
@@ -343,8 +322,7 @@ export default function Home() {
         </Text>
         <Text
           style={{
-            fontFamily: "serif",
-            fontStyle: "italic",
+            fontFamily: fonts.serifItalic,
             fontSize: 13,
             color: C.textSecondary,
             textAlign: "center",
@@ -356,19 +334,22 @@ export default function Home() {
 
         <View style={{ paddingHorizontal: spacing.m, gap: spacing.xs }}>
           {CATEGORIES.map(({ label, slug }) => (
-            <Pressable
+            <PressableScale
               key={slug}
               onPress={() => router.push(`/prayers/${slug}`)}
-              style={({ pressed }) => ({
+              haptic
+              accessibilityLabel={label}
+              style={{
                 flexDirection: "row",
                 alignItems: "center",
+                minHeight: 52,
                 borderColor: C.hairline,
                 borderWidth: 1,
                 borderRadius: radii.m,
                 paddingVertical: spacing.m,
                 paddingHorizontal: spacing.m,
-                backgroundColor: pressed ? C.surface : C.surfaceElevated,
-              })}
+                backgroundColor: C.surfaceElevated,
+              }}
             >
               <MaterialCommunityIcons
                 name="cross"
@@ -380,41 +361,43 @@ export default function Home() {
                 style={{
                   color: C.textPrimary,
                   flex: 1,
-                  fontFamily: "serif",
+                  fontFamily: fonts.serif,
                   fontSize: 15,
                 }}
               >
                 {label}
               </Text>
               <MaterialCommunityIcons name="chevron-right" size={20} color={C.sacredGold} />
-            </Pressable>
+            </PressableScale>
           ))}
         </View>
 
         <View style={{ alignItems: "center", marginTop: spacing.m, marginBottom: spacing.s }}>
-          <Pressable
-            style={({ pressed }) => ({
+          <PressableScale
+            onPress={() => router.push("/(tabs)/prayers")}
+            accessibilityLabel="More prayer categories"
+            style={{
+              minHeight: 44,
               paddingVertical: spacing.s,
               paddingHorizontal: spacing.xl,
               borderRadius: radii.pill,
               borderColor: C.sacredGold,
               borderWidth: 1,
-              opacity: pressed ? 0.7 : 1,
-            })}
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "600" }}>
+            <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontSize: 16 }}>
               More
             </Text>
-          </Pressable>
+          </PressableScale>
         </View>
 
         <CrossDivider style={{ marginHorizontal: spacing.m, marginTop: spacing.m }} />
 
-        {/* More for You */}
         <Text
           style={{
-            fontFamily: "serif",
-            fontWeight: "700",
+            fontFamily: fonts.serifBold,
             fontSize: 20,
             color: C.sacredGold,
             textAlign: "center",
@@ -440,7 +423,7 @@ export default function Home() {
             style={{
               width: 56,
               height: 70,
-              borderRadius: 8,
+              borderRadius: radii.s,
               backgroundColor: C.byzantineCrimson,
               alignItems: "center",
               justifyContent: "center",
@@ -454,8 +437,7 @@ export default function Home() {
           <View style={{ flex: 1 }}>
             <Text
               style={{
-                fontFamily: "serif",
-                fontWeight: "700",
+                fontFamily: fonts.serifBold,
                 fontSize: 16,
                 color: C.sacredGold,
                 marginBottom: 4,
@@ -463,34 +445,36 @@ export default function Home() {
             >
               Share the Red Prayer Book
             </Text>
-            <Text style={{ color: C.textSecondary, fontSize: 12, marginBottom: spacing.s }}>
+            <Text style={{ color: C.textSecondary, fontFamily: fonts.body, fontSize: 12, marginBottom: spacing.s }}>
               Invite friends to get closer to ancient Christianity.
             </Text>
-            <Pressable
-              style={({ pressed }) => ({
+            <PressableScale
+              haptic
+              accessibilityLabel="Share the Red Prayer Book"
+              style={{
                 alignSelf: "flex-start",
+                minHeight: 36,
                 paddingHorizontal: spacing.m,
-                paddingVertical: 6,
-                backgroundColor: pressed ? C.surface : C.byzantineCrimson,
+                paddingVertical: spacing.xs,
+                backgroundColor: C.byzantineCrimson,
                 borderRadius: radii.pill,
                 borderWidth: 1,
                 borderColor: C.sacredGold,
-              })}
+                justifyContent: "center",
+              }}
             >
-              <Text style={{ color: C.sacredGold, fontWeight: "700", fontSize: 13 }}>
+              <Text style={{ color: C.textOnAccent, fontFamily: fonts.bodyBold, fontSize: 13 }}>
                 Share
               </Text>
-            </Pressable>
+            </PressableScale>
           </View>
         </View>
 
         <CrossDivider style={{ marginHorizontal: spacing.m, marginTop: spacing.xl }} />
 
-        {/* Badges */}
         <Text
           style={{
-            fontFamily: "serif",
-            fontWeight: "700",
+            fontFamily: fonts.serifBold,
             fontSize: 20,
             color: C.sacredGold,
             textAlign: "center",
