@@ -16,6 +16,8 @@ import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
+import { fonts } from "@/theme/typography";
+import { IconButton } from "@/components/ui/IconButton";
 import { savePrayerIntention } from "@/lib/db";
 
 const API_BASE = `${process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : ""}/api`;
@@ -120,12 +122,11 @@ export default function IntentionScreen() {
           backgroundColor: C.surfaceElevated,
         }}
       >
-        <Pressable
+        <IconButton
+          icon="chevron-left"
+          accessibilityLabel="Go back"
           onPress={() => router.back()}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, marginRight: spacing.m })}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={26} color={C.sacredGold} />
-        </Pressable>
+        />
         <View
           style={{
             width: 36,
@@ -142,7 +143,7 @@ export default function IntentionScreen() {
           <MaterialCommunityIcons name="hands-pray" size={17} color={C.sacredGold} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16 }}>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 16 }}>
             Compose a Prayer
           </Text>
           <Text style={{ color: C.textMuted, fontSize: 11 }}>Your personal intention, in Orthodox form</Text>
@@ -187,7 +188,7 @@ export default function IntentionScreen() {
               <Text
                 style={{
                   color: C.sacredGold,
-                  fontFamily: "serif",
+                  fontFamily: fonts.serifBold,
                   fontWeight: "700",
                   fontSize: 20,
                   textAlign: "center",
@@ -199,7 +200,7 @@ export default function IntentionScreen() {
               <Text
                 style={{
                   color: C.textSecondary,
-                  fontFamily: "serif",
+                  fontFamily: fonts.serif,
                   fontSize: 14,
                   textAlign: "center",
                   lineHeight: 22,
@@ -223,7 +224,7 @@ export default function IntentionScreen() {
               <TextInput
                 style={{
                   color: C.textPrimary,
-                  fontFamily: "serif",
+                  fontFamily: fonts.serif,
                   fontSize: 16,
                   lineHeight: 24,
                   minHeight: 80,
@@ -258,7 +259,7 @@ export default function IntentionScreen() {
               <Text
                 style={{
                   color: !intention.trim() ? C.textMuted : C.sacredGold,
-                  fontFamily: "serif",
+                  fontFamily: fonts.serifBold,
                   fontWeight: "700",
                   fontSize: 16,
                 }}
@@ -297,7 +298,7 @@ export default function IntentionScreen() {
                   })}
                 >
                   <MaterialCommunityIcons name="cross" size={14} color={C.sacredGold} />
-                  <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 14, flex: 1 }}>
+                  <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 14, flex: 1 }}>
                     {ex}
                   </Text>
                 </Pressable>
@@ -324,10 +325,10 @@ export default function IntentionScreen() {
               <MaterialCommunityIcons name="cross" size={36} color={C.sacredGold} />
             </View>
             <ActivityIndicator color={C.sacredGold} size="large" style={{ marginBottom: spacing.m }} />
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 18, textAlign: "center" }}>
+            <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 18, textAlign: "center" }}>
               Composing your prayer…
             </Text>
-            <Text style={{ color: C.textMuted, fontFamily: "serif", fontSize: 13, textAlign: "center", marginTop: spacing.s, lineHeight: 20 }}>
+            <Text style={{ color: C.textMuted, fontFamily: fonts.serif, fontSize: 13, textAlign: "center", marginTop: spacing.s, lineHeight: 20 }}>
               "Ask, and it will be given to you; seek, and you will find." — Matthew 7:7
             </Text>
           </View>
@@ -352,7 +353,7 @@ export default function IntentionScreen() {
               }}
             >
               <MaterialCommunityIcons name="hands-pray" size={14} color={C.textMuted} />
-              <Text style={{ color: C.textMuted, fontFamily: "serif", fontSize: 13, fontStyle: "italic", flex: 1 }}>
+              <Text style={{ color: C.textMuted, fontFamily: fonts.serifItalic, fontSize: 13, fontStyle: "italic", flex: 1 }}>
                 {intention.trim()}
               </Text>
             </View>
@@ -378,7 +379,7 @@ export default function IntentionScreen() {
               <Text
                 style={{
                   color: C.textPrimary,
-                  fontFamily: "serif",
+                  fontFamily: fonts.serifItalic,
                   fontSize: 16,
                   lineHeight: 28,
                   fontStyle: "italic",
@@ -423,7 +424,7 @@ export default function IntentionScreen() {
                   <Text
                     style={{
                       color: saved ? C.textMuted : C.sacredGold,
-                      fontFamily: "serif",
+                      fontFamily: fonts.serifBold,
                       fontWeight: "700",
                       fontSize: 15,
                     }}
@@ -448,7 +449,7 @@ export default function IntentionScreen() {
                   })}
                 >
                   <MaterialCommunityIcons name="share-outline" size={18} color={C.textSecondary} />
-                  <Text style={{ color: C.textSecondary, fontFamily: "serif", fontWeight: "600", fontSize: 15 }}>
+                  <Text style={{ color: C.textSecondary, fontFamily: fonts.serifBold, fontWeight: "600", fontSize: 15 }}>
                     Share Prayer
                   </Text>
                 </Pressable>
@@ -465,7 +466,7 @@ export default function IntentionScreen() {
                   })}
                 >
                   <MaterialCommunityIcons name="refresh" size={16} color={C.textMuted} />
-                  <Text style={{ color: C.textMuted, fontFamily: "serif", fontSize: 14 }}>
+                  <Text style={{ color: C.textMuted, fontFamily: fonts.serif, fontSize: 14 }}>
                     Compose Another
                   </Text>
                 </Pressable>

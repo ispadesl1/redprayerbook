@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { colors } from '@/theme/colors';
 import { spacing, radii } from '@/theme/spacing';
+import { fonts } from '@/theme/typography';
 import { getCalendarEntry, julianShift } from '@/lib/calendar';
 import { DaySheet } from './DaySheet';
 
@@ -77,7 +78,7 @@ export function MonthGrid({ year, month, style }: Props) {
                   minHeight: 80,
                   borderColor: colors.hairline,
                   borderWidth: 0.5,
-                  backgroundColor: 'rgba(0,0,0,0.2)',
+                  backgroundColor: colors.overlayOnyx25,
                 }}
               />
             );
@@ -93,6 +94,7 @@ export function MonthGrid({ year, month, style }: Props) {
             <Pressable
               key={`day-${i}`}
               onPress={() => setActiveDay({ year, month, day: d })}
+              accessibilityLabel={`${d}${entry?.title ? `, ${entry.title}` : ''}`}
               style={({ pressed }) => ({
                 width: '14.285%',
                 minHeight: 80,
@@ -100,10 +102,11 @@ export function MonthGrid({ year, month, style }: Props) {
                 borderWidth: 0.5,
                 padding: 4,
                 backgroundColor: isToday
-                  ? 'rgba(139,14,26,0.3)'
+                  ? colors.overlayCrimson30
                   : pressed
-                  ? 'rgba(212,175,55,0.1)'
+                  ? colors.overlayGold10
                   : 'transparent',
+                transform: [{ scale: pressed ? 0.97 : 1 }],
               })}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -124,7 +127,7 @@ export function MonthGrid({ year, month, style }: Props) {
                 <Text
                   style={{
                     color: colors.textSecondary,
-                    fontFamily: 'serif',
+                    fontFamily: fonts.serif,
                     fontSize: 8,
                     marginTop: 2,
                     lineHeight: 11,

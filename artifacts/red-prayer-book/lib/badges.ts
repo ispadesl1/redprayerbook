@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { colors } from '@/theme/colors';
 
 export type BadgeDef = {
   id: string;
@@ -10,14 +11,14 @@ export type BadgeDef = {
 };
 
 export const BADGE_DEFS: BadgeDef[] = [
-  { id: 'share_verses', label: 'Share Verses', description: 'Share 30 Bible verses', max: 30, color: '#E39C3D', mciIcon: 'share-variant' },
-  { id: 'whole_bible', label: 'Whole Bible', description: 'Read 100 Bible chapters', max: 100, color: '#276A3D', mciIcon: 'book-open-variant' },
-  { id: 'notes', label: 'Notes', description: 'Write 50 notes', max: 50, color: '#B22222', mciIcon: 'pencil' },
-  { id: 'days_fasted', label: 'Days Fasted', description: 'Record 40 fasting days', max: 40, color: '#4A2C4E', mciIcon: 'fish' },
-  { id: 'daily_prayers', label: 'Daily Prayers', description: 'Complete 100 daily prayers', max: 100, color: '#C97A24', mciIcon: 'hands-pray' },
-  { id: 'streak', label: 'App Streak', description: 'Maintain a 30-day streak', max: 30, color: '#D4AF37', mciIcon: 'lightning-bolt' },
-  { id: 'calendar', label: 'Calendar', description: 'Check the calendar 30 times', max: 30, color: '#2B7A5E', mciIcon: 'calendar-star' },
-  { id: 'vespers', label: 'Vespers', description: 'Complete 20 Vespers prayers', max: 20, color: '#4A2C4E', mciIcon: 'candle' },
+  { id: 'share_verses', label: 'Share Verses', description: 'Share 30 Bible verses', max: 30, color: colors.candlelightAmber, mciIcon: 'share-variant' },
+  { id: 'whole_bible', label: 'Whole Bible', description: 'Read 100 Bible chapters', max: 100, color: colors.liturgicalGreen, mciIcon: 'book-open-variant' },
+  { id: 'notes', label: 'Notes', description: 'Write 50 notes', max: 50, color: colors.martyrRed, mciIcon: 'pencil' },
+  { id: 'days_fasted', label: 'Days Fasted', description: 'Record 40 fasting days', max: 40, color: colors.vesperPurple, mciIcon: 'fish' },
+  { id: 'daily_prayers', label: 'Daily Prayers', description: 'Complete 100 daily prayers', max: 100, color: colors.iconGold, mciIcon: 'hands-pray' },
+  { id: 'streak', label: 'App Streak', description: 'Maintain a 30-day streak', max: 30, color: colors.sacredGold, mciIcon: 'lightning-bolt' },
+  { id: 'calendar', label: 'Calendar', description: 'Check the calendar 30 times', max: 30, color: colors.liturgicalGreen, mciIcon: 'calendar-star' },
+  { id: 'vespers', label: 'Vespers', description: 'Complete 20 Vespers prayers', max: 20, color: colors.vesperPurple, mciIcon: 'candle' },
 ];
 
 const KEY = (id: string) => `rpb:badge:${id}`;

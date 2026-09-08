@@ -14,6 +14,9 @@ import {
 } from "@/lib/db";
 import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
+import { fonts } from "@/theme/typography";
+import { IconButton } from "@/components/ui/IconButton";
+import { PressableScale } from "@/components/ui/PressableScale";
 
 type Highlight = { id: string; book: string; chapter: number; verse: number; color: string };
 
@@ -95,20 +98,15 @@ export default function Bookmarks() {
           backgroundColor: C.surface,
         }}
       >
-        <Pressable
+        <IconButton
+          icon="chevron-left"
+          accessibilityLabel="Go back"
           onPress={() => router.back()}
-          style={({ pressed }) => ({
-            padding: 4,
-            marginRight: spacing.s,
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={26} color={C.sacredGold} />
-        </Pressable>
+        />
         <Text
           style={{
             flex: 1,
-            fontFamily: "serif",
+            fontFamily: fonts.serifBold,
             fontWeight: "700",
             fontSize: 22,
             color: C.sacredGold,
@@ -251,7 +249,7 @@ export default function Bookmarks() {
                 <Text
                   style={{
                     color: C.sacredGold,
-                    fontFamily: "serif",
+                    fontFamily: fonts.serifBold,
                     fontWeight: "700",
                     fontSize: 13,
                   }}
@@ -309,7 +307,7 @@ export default function Bookmarks() {
                       <Text
                         style={{
                           color: C.textPrimary,
-                          fontFamily: "serif",
+                          fontFamily: fonts.serifItalic,
                           fontSize: 14,
                           fontStyle: "italic",
                         }}
@@ -334,7 +332,7 @@ export default function Bookmarks() {
                       <Text
                         style={{
                           color: C.textPrimary,
-                          fontFamily: "serif",
+                          fontFamily: fonts.serifItalic,
                           fontSize: 15,
                           lineHeight: 26,
                           fontStyle: "italic",
@@ -342,16 +340,17 @@ export default function Bookmarks() {
                       >
                         {p.prayerText}
                       </Text>
-                      <Pressable
+                      <PressableScale
                         onPress={() => handleDeleteIntention(p.id)}
-                        style={({ pressed }) => ({
+                        accessibilityLabel="Remove intention"
+                        style={{
                           flexDirection: "row",
                           alignItems: "center",
                           gap: spacing.xs,
                           marginTop: spacing.m,
                           alignSelf: "flex-end",
-                          opacity: pressed ? 0.6 : 1,
-                        })}
+                          minHeight: 44,
+                        }}
                       >
                         <MaterialCommunityIcons
                           name="trash-can-outline"
@@ -359,7 +358,7 @@ export default function Bookmarks() {
                           color={C.textMuted}
                         />
                         <Text style={{ color: C.textMuted, fontSize: 12 }}>Remove</Text>
-                      </Pressable>
+                      </PressableScale>
                     </View>
                   )}
                 </View>
@@ -411,7 +410,7 @@ function PrayerBookmarkRow({
         <Text
           style={{
             color: C.textPrimary,
-            fontFamily: "serif",
+            fontFamily: fonts.serifBold,
             fontWeight: "600",
             fontSize: 15,
           }}
@@ -424,14 +423,13 @@ function PrayerBookmarkRow({
         </Text>
       </View>
 
-      <Pressable
-        onPress={onRemove}
-        hitSlop={12}
-        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, padding: 4 })}
+      <IconButton
+        icon="bookmark-remove-outline"
         accessibilityLabel="Remove bookmark"
-      >
-        <MaterialCommunityIcons name="bookmark-remove-outline" size={20} color={C.textMuted} />
-      </Pressable>
+        color={C.textMuted}
+        size={20}
+        onPress={onRemove}
+      />
 
       <MaterialCommunityIcons
         name="chevron-right"
@@ -467,7 +465,7 @@ function EmptyState({
       <Text
         style={{
           color: C.textSecondary,
-          fontFamily: "serif",
+          fontFamily: fonts.serifBold,
           fontWeight: "700",
           fontSize: 18,
           marginBottom: spacing.s,
@@ -479,7 +477,7 @@ function EmptyState({
       <Text
         style={{
           color: C.textMuted,
-          fontFamily: "serif",
+          fontFamily: fonts.serif,
           fontSize: 14,
           textAlign: "center",
           lineHeight: 22,
@@ -503,7 +501,7 @@ function EmptyState({
               color: C.surfaceDeep,
               fontWeight: "700",
               fontSize: 14,
-              fontFamily: "serif",
+              fontFamily: fonts.serifBold,
             }}
           >
             {action}

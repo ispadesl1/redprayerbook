@@ -3,14 +3,14 @@ import {
   View,
   Text,
   ScrollView,
-  Pressable,
   TextInput,
-  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors } from '@/theme/colors';
 import { spacing, radii, shadows } from '@/theme/spacing';
+import { fonts } from '@/theme/typography';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { PRAYER_SECTIONS, PrayerSection, Prayer } from '@/lib/prayers';
 
 const SECTION_ICONS: Record<string, string> = {
@@ -60,7 +60,7 @@ function SearchBar({
           flex: 1,
           color: colors.textPrimary,
           fontSize: 14,
-          fontFamily: 'serif',
+          fontFamily: fonts.body,
           paddingVertical: 2,
         }}
         returnKeyType="search"
@@ -92,17 +92,17 @@ function SectionCard({
         ...shadows.card,
       }}
     >
-      <Pressable
+      <PressableScale
         onPress={onToggle}
-        style={({ pressed }) => ({
+        accessibilityLabel={`${section.title}, ${section.prayers.length} prayers`}
+        accessibilityState={{ expanded }}
+        style={{
           flexDirection: 'row',
           alignItems: 'center',
+          minHeight: 44,
           paddingHorizontal: spacing.m,
           paddingVertical: spacing.s,
-          backgroundColor: pressed
-            ? 'rgba(212,175,55,0.08)'
-            : 'transparent',
-        })}
+        }}
       >
         <View
           style={{
@@ -123,7 +123,7 @@ function SectionCard({
         <View style={{ flex: 1 }}>
           <Text
             style={{
-              fontFamily: 'serif',
+              fontFamily: fonts.serifBold,
               fontWeight: '700',
               fontSize: 15,
               color: colors.sacredGold,
@@ -153,7 +153,7 @@ function SectionCard({
         >
           ›
         </Text>
-      </Pressable>
+      </PressableScale>
 
       {expanded && (
         <View
@@ -193,22 +193,24 @@ function PrayerRow({ prayer, isLast }: { prayer: Prayer; isLast: boolean }) {
   };
 
   return (
-    <Pressable
+    <PressableScale
       onPress={() => router.push(`/prayers/${prayer.slug}` as any)}
-      style={({ pressed }) => ({
+      haptic
+      accessibilityLabel={prayer.title}
+      style={{
         flexDirection: 'row',
         alignItems: 'center',
+        minHeight: 44,
         paddingHorizontal: spacing.m,
         paddingVertical: spacing.s,
-        backgroundColor: pressed ? 'rgba(212,175,55,0.06)' : 'transparent',
         borderBottomWidth: isLast ? 0 : 1,
-        borderBottomColor: 'rgba(212,175,55,0.1)',
-      })}
+        borderBottomColor: colors.hairlineSubtle,
+      }}
     >
       <View style={{ flex: 1, paddingLeft: spacing.xs }}>
         <Text
           style={{
-            fontFamily: 'serif',
+            fontFamily: fonts.serifBold,
             fontSize: 14,
             color: colors.textPrimary,
             fontWeight: '600',
@@ -251,7 +253,7 @@ function PrayerRow({ prayer, isLast }: { prayer: Prayer; isLast: boolean }) {
       </View>
 
       <Text style={{ color: colors.textMuted, marginLeft: spacing.xs, fontSize: 14 }}>›</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -302,13 +304,13 @@ function SearchResults({ query }: { query: string }) {
         {results.length} result{results.length !== 1 ? 's' : ''}
       </Text>
       {results.map(({ prayer, sectionTitle }) => (
-        <Pressable
+        <PressableScale
           key={prayer.slug}
           onPress={() => router.push(`/prayers/${prayer.slug}` as any)}
-          style={({ pressed }) => ({
-            backgroundColor: pressed
-              ? 'rgba(212,175,55,0.08)'
-              : colors.surfaceElevated,
+          haptic
+          accessibilityLabel={prayer.title}
+          style={{
+            backgroundColor: colors.surfaceElevated,
             borderRadius: radii.m,
             borderWidth: 1,
             borderColor: colors.hairline,
@@ -316,12 +318,13 @@ function SearchResults({ query }: { query: string }) {
             marginBottom: spacing.xs,
             flexDirection: 'row',
             alignItems: 'center',
-          })}
+            minHeight: 44,
+          }}
         >
           <View style={{ flex: 1 }}>
             <Text
               style={{
-                fontFamily: 'serif',
+                fontFamily: fonts.serifBold,
                 fontWeight: '700',
                 fontSize: 14,
                 color: colors.sacredGold,
@@ -334,7 +337,7 @@ function SearchResults({ query }: { query: string }) {
             </Text>
           </View>
           <Text style={{ color: colors.textMuted, fontSize: 14 }}>›</Text>
-        </Pressable>
+        </PressableScale>
       ))}
     </View>
   );
@@ -377,7 +380,7 @@ export default function Prayers() {
       >
         <Text
           style={{
-            fontFamily: 'serif',
+            fontFamily: fonts.serifBold,
             fontWeight: '700',
             fontSize: 22,
             color: colors.sacredGold,
@@ -390,7 +393,7 @@ export default function Prayers() {
         </Text>
         <Text
           style={{
-            fontFamily: 'serif',
+            fontFamily: fonts.serifItalic,
             fontStyle: 'italic',
             fontSize: 11,
             color: colors.textMuted,

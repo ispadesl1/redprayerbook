@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  Pressable,
   Share,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,6 +11,9 @@ import { useLocalSearchParams } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
+import { fonts } from "@/theme/typography";
+import { IconButton } from "@/components/ui/IconButton";
+import { PressableScale } from "@/components/ui/PressableScale";
 import {
   CANONICAL_HOURS,
   getCurrentHour,
@@ -64,27 +66,28 @@ export default function HoursScreen() {
           backgroundColor: C.surfaceElevated,
         }}
       >
-        <Pressable
+        <IconButton
+          icon="chevron-left"
+          accessibilityLabel="Go back"
           onPress={() => router.back()}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, marginRight: spacing.m })}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={26} color={C.sacredGold} />
-        </Pressable>
+        />
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16 }}>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 16 }}>
             Canonical Hours
           </Text>
           <Text style={{ color: C.textMuted, fontSize: 11 }}>Divine Office of the Church</Text>
         </View>
-        <Text style={{ color: C.textMuted, fontFamily: "serif", fontSize: 14, marginRight: spacing.s }}>
+        <Text style={{ color: C.textMuted, fontFamily: fonts.serif, fontSize: 14, marginRight: spacing.s }}>
           {clock}
         </Text>
-        <Pressable
+        <IconButton
+          icon="share-outline"
+          accessibilityLabel="Share this hour"
+          color={C.textMuted}
+          size={22}
           onPress={handleShare}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-        >
-          <MaterialCommunityIcons name="share-outline" size={22} color={C.textMuted} />
-        </Pressable>
+          haptic
+        />
       </View>
 
       {/* Hours selector strip */}
@@ -102,21 +105,23 @@ export default function HoursScreen() {
           const isActive = h.id === current.id;
           const isCurrent = h.id === getCurrentHour().id;
           return (
-            <Pressable
+            <PressableScale
               key={h.id}
               onPress={() => setCurrent(h)}
-              style={({ pressed }) => ({
+              accessibilityLabel={h.name}
+              accessibilityState={{ selected: isActive }}
+              style={{
+                minHeight: 36,
                 paddingHorizontal: spacing.m,
-                paddingVertical: 8,
+                paddingVertical: spacing.xs,
                 borderRadius: radii.pill,
                 borderWidth: 1,
                 borderColor: isActive ? h.accentColor : isCurrent ? C.hairline : "transparent",
-                backgroundColor: isActive ? h.accentColor : isCurrent ? "rgba(255,255,255,0.05)" : "transparent",
-                opacity: pressed ? 0.7 : 1,
+                backgroundColor: isActive ? h.accentColor : isCurrent ? C.overlayWhite05 : "transparent",
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 5,
-              })}
+              }}
             >
               <MaterialCommunityIcons
                 name={h.icon as MCI}
@@ -128,7 +133,7 @@ export default function HoursScreen() {
                   color: isActive ? C.ivoryVellum : isCurrent ? C.sacredGold : C.textMuted,
                   fontSize: 12,
                   fontWeight: isActive ? "700" : "400",
-                  fontFamily: "serif",
+                  fontFamily: fonts.serif,
                 }}
               >
                 {h.name}
@@ -144,7 +149,7 @@ export default function HoursScreen() {
                   }}
                 />
               )}
-            </Pressable>
+            </PressableScale>
           );
         })}
       </ScrollView>
@@ -180,32 +185,32 @@ export default function HoursScreen() {
                 width: 52,
                 height: 52,
                 borderRadius: 26,
-                backgroundColor: "rgba(0,0,0,0.25)",
+                backgroundColor: C.overlayOnyx25,
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.3)",
+                borderColor: C.overlayWhite30,
               }}
             >
               <MaterialCommunityIcons name={current.icon as MCI} size={26} color={C.ivoryVellum} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: C.ivoryVellum, fontFamily: "serif", fontWeight: "700", fontSize: 22 }}>
+              <Text style={{ color: C.ivoryVellum, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 22 }}>
                 {current.name}
               </Text>
-              <Text style={{ color: "rgba(245,235,221,0.75)", fontFamily: "serif", fontSize: 13 }}>
+              <Text style={{ color: C.overlayIvory75, fontFamily: fonts.serif, fontSize: 13 }}>
                 {current.subtitle}
               </Text>
             </View>
             {isCurrentHour && (
               <View
                 style={{
-                  backgroundColor: "rgba(0,0,0,0.25)",
+                  backgroundColor: C.overlayOnyx25,
                   borderRadius: radii.pill,
                   paddingHorizontal: spacing.s,
                   paddingVertical: 4,
                   borderWidth: 1,
-                  borderColor: "rgba(255,255,255,0.3)",
+                  borderColor: C.overlayWhite30,
                 }}
               >
                 <Text style={{ color: C.ivoryVellum, fontSize: 10, fontWeight: "700", letterSpacing: 0.8 }}>
@@ -221,7 +226,7 @@ export default function HoursScreen() {
               <MaterialCommunityIcons name="clock-outline" size={13} color={C.textMuted} />
               <Text style={{ color: C.textMuted, fontSize: 12 }}>{current.timeLabel}</Text>
               <Text style={{ color: C.hairline, marginHorizontal: 4 }}>·</Text>
-              <Text style={{ color: C.textMuted, fontFamily: "serif", fontStyle: "italic", fontSize: 12 }}>
+              <Text style={{ color: C.textMuted, fontFamily: fonts.serifItalic, fontStyle: "italic", fontSize: 12 }}>
                 {current.greekName}
               </Text>
             </View>
@@ -234,7 +239,7 @@ export default function HoursScreen() {
                 marginBottom: spacing.m,
               }}
             >
-              <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 14, lineHeight: 22, fontStyle: "italic" }}>
+              <Text style={{ color: C.textPrimary, fontFamily: fonts.serifItalic, fontSize: 14, lineHeight: 22, fontStyle: "italic" }}>
                 "{current.verse}"
               </Text>
               <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 4 }}>— {current.verseRef}</Text>
@@ -245,7 +250,7 @@ export default function HoursScreen() {
                 flexDirection: "row",
                 alignItems: "center",
                 gap: spacing.xs,
-                backgroundColor: "rgba(212,175,55,0.07)",
+                backgroundColor: C.overlayGold07,
                 borderRadius: radii.s,
                 padding: spacing.s,
               }}
@@ -268,7 +273,7 @@ export default function HoursScreen() {
           <Text
             style={{
               color: C.textPrimary,
-              fontFamily: "serif",
+              fontFamily: fonts.serifItalic,
               fontSize: 16,
               lineHeight: 30,
               fontStyle: "italic",
@@ -292,10 +297,12 @@ export default function HoursScreen() {
             marginBottom: spacing.m,
           }}
         >
-          <Pressable
+          <PressableScale
             onPress={goPrev}
-            style={({ pressed }) => ({
+            accessibilityLabel={`Previous hour, ${getPrevHour(current).name}`}
+            style={{
               flex: 1,
+              minHeight: 48,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
@@ -304,41 +311,44 @@ export default function HoursScreen() {
               borderRadius: radii.m,
               borderWidth: 1,
               borderColor: C.hairline,
-              backgroundColor: pressed ? C.surface : C.surfaceElevated,
-              opacity: pressed ? 0.7 : 1,
-            })}
+              backgroundColor: C.surfaceElevated,
+            }}
           >
             <MaterialCommunityIcons name="chevron-left" size={18} color={C.textSecondary} />
-            <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 13 }}>
+            <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 13 }}>
               {getPrevHour(current).name}
             </Text>
-          </Pressable>
+          </PressableScale>
 
           {!isCurrentHour && (
-            <Pressable
+            <PressableScale
               onPress={goNow}
-              style={({ pressed }) => ({
+              haptic
+              accessibilityLabel="Go to current hour"
+              style={{
+                minHeight: 48,
                 paddingHorizontal: spacing.m,
                 paddingVertical: spacing.m,
                 borderRadius: radii.m,
                 borderWidth: 1,
                 borderColor: C.sacredGold,
-                backgroundColor: pressed ? C.surface : C.byzantineCrimson,
+                backgroundColor: C.byzantineCrimson,
                 alignItems: "center",
                 justifyContent: "center",
-                opacity: pressed ? 0.8 : 1,
-              })}
+              }}
             >
-              <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 12 }}>
+              <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 12 }}>
                 Now
               </Text>
-            </Pressable>
+            </PressableScale>
           )}
 
-          <Pressable
+          <PressableScale
             onPress={goNext}
-            style={({ pressed }) => ({
+            accessibilityLabel={`Next hour, ${getNextHour(current).name}`}
+            style={{
               flex: 1,
+              minHeight: 48,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
@@ -347,15 +357,14 @@ export default function HoursScreen() {
               borderRadius: radii.m,
               borderWidth: 1,
               borderColor: C.hairline,
-              backgroundColor: pressed ? C.surface : C.surfaceElevated,
-              opacity: pressed ? 0.7 : 1,
-            })}
+              backgroundColor: C.surfaceElevated,
+            }}
           >
-            <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 13 }}>
+            <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 13 }}>
               {getNextHour(current).name}
             </Text>
             <MaterialCommunityIcons name="chevron-right" size={18} color={C.textSecondary} />
-          </Pressable>
+          </PressableScale>
         </View>
       </ScrollView>
     </SafeAreaView>

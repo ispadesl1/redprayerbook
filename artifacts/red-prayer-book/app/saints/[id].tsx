@@ -4,6 +4,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { CrossDivider } from '@/components/ui/CrossDivider';
 import { colors } from '@/theme/colors';
 import { spacing, radii } from '@/theme/spacing';
+import { fonts } from '@/theme/typography';
 
 const SAINTS: Record<string, { name: string; feast: string; life: string }> = {
   'nicholas': {
@@ -36,7 +37,7 @@ export default function SaintDetail() {
         </Pressable>
         <Text
           style={{
-            fontFamily: 'serif',
+            fontFamily: fonts.serifBold,
             fontWeight: '700',
             fontSize: 18,
             color: colors.ivoryVellum,
@@ -76,7 +77,7 @@ export default function SaintDetail() {
           </View>
           <Text
             style={{
-              fontFamily: 'serif',
+              fontFamily: fonts.serifBold,
               fontWeight: '700',
               fontSize: 22,
               color: colors.sacredGold,
@@ -103,7 +104,7 @@ export default function SaintDetail() {
 
         <Text
           style={{
-            fontFamily: 'serif',
+            fontFamily: fonts.serifItalic,
             fontStyle: 'italic',
             fontSize: 15,
             color: colors.textPrimary,

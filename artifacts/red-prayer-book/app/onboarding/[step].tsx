@@ -1,8 +1,10 @@
-import { View, Text, Pressable, Image } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { colors } from '@/theme/colors';
-import { spacing, radii } from '@/theme/spacing';
+import { spacing, radii, hitTarget } from '@/theme/spacing';
+import { fonts } from '@/theme/typography';
+import { PressableScale } from '@/components/ui/PressableScale';
 
 const STEPS = [
   {
@@ -61,7 +63,7 @@ export default function Onboarding() {
 
         <Text
           style={{
-            fontFamily: 'serif',
+            fontFamily: fonts.serifBold,
             fontWeight: '700',
             fontSize: 32,
             color: colors.sacredGold,
@@ -75,7 +77,7 @@ export default function Onboarding() {
 
         <Text
           style={{
-            fontFamily: 'serif',
+            fontFamily: fonts.serifItalic,
             fontStyle: 'italic',
             fontSize: 16,
             color: colors.ivoryVellum,
@@ -87,7 +89,7 @@ export default function Onboarding() {
           {current.body}
         </Text>
 
-        <View style={{ flexDirection: 'row', gap: 8, marginBottom: spacing.xl }}>
+        <View style={{ flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xl }}>
           {STEPS.map((_, i) => (
             <View
               key={i}
@@ -101,29 +103,33 @@ export default function Onboarding() {
           ))}
         </View>
 
-        <Pressable
+        <PressableScale
           onPress={handleNext}
-          style={({ pressed }) => ({
-            backgroundColor: pressed ? colors.surface : colors.byzantineCrimson,
+          haptic
+          accessibilityLabel={isLast ? 'Begin Your Daily Prayer' : 'Continue'}
+          style={{
+            minHeight: hitTarget,
+            backgroundColor: colors.byzantineCrimson,
             paddingVertical: spacing.m,
             paddingHorizontal: spacing.xxl,
             borderRadius: radii.pill,
             borderWidth: 1,
             borderColor: colors.sacredGold,
-          })}
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <Text
             style={{
-              color: colors.sacredGold,
-              fontFamily: 'serif',
-              fontWeight: '700',
+              color: colors.textOnAccent,
+              fontFamily: fonts.serifBold,
               fontSize: 16,
               letterSpacing: 1,
             }}
           >
             {isLast ? 'Begin Your Daily Prayer' : 'Continue'}
           </Text>
-        </Pressable>
+        </PressableScale>
       </View>
     </SafeAreaView>
   );

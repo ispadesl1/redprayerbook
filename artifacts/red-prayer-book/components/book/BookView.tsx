@@ -16,6 +16,7 @@ import { useBookStore } from '@/lib/store';
 import { playFlipSfx, playRiffleSfx, stopRiffleSfx } from '@/lib/audio';
 import { colors } from '@/theme/colors';
 import { spacing, radii } from '@/theme/spacing';
+import { fonts } from '@/theme/typography';
 
 type Props = {
   riffleTarget: number | null;
@@ -170,7 +171,7 @@ export function BookView({ riffleTarget, onRiffleComplete }: Props) {
             borderWidth: 1,
           }}
         >
-          <Text style={{ color: colors.sacredGold, fontFamily: 'serif', fontSize: 13 }}>
+          <Text style={{ color: colors.sacredGold, fontFamily: fonts.serif, fontSize: 13 }}>
             Page {currentIndex + 1} of {totalPages}  ✎
           </Text>
         </Pressable>

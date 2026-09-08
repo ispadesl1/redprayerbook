@@ -1,3 +1,5 @@
+import { colors } from "@/theme/colors";
+
 export type FastStrictness = "strict" | "moderate" | "light" | "weekly" | "free";
 
 export type FastingPeriod = {
@@ -423,11 +425,11 @@ export function getStrictnessLabel(s: FastStrictness): string {
 
 export function getStrictnessColor(s: FastStrictness): string {
   switch (s) {
-    case "strict": return "#8B0E1A";
-    case "moderate": return "#C97A24";
-    case "light": return "#D4AF37";
-    case "weekly": return "#276A3D";
-    case "free": return "#4A2C4E";
+    case "strict": return colors.byzantineCrimson;
+    case "moderate": return colors.iconGold;
+    case "light": return colors.sacredGold;
+    case "weekly": return colors.liturgicalGreen;
+    case "free": return colors.vesperPurple;
   }
 }
 

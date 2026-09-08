@@ -6,6 +6,9 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
 import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
+import { fonts } from "@/theme/typography";
+import { IconButton } from "@/components/ui/IconButton";
+import { PressableScale } from "@/components/ui/PressableScale";
 import { getCalendarEntry } from "@/lib/calendar";
 import { incrementBadge } from "@/lib/badges";
 import { getTodayFastStatus, getPeriodProgress, getStrictnessColor, formatShortDate } from "@/lib/fasting";
@@ -54,7 +57,7 @@ export default function Calendar() {
           <Pressable style={{ padding: 4 }}>
             <MaterialCommunityIcons name="chevron-left" size={24} color={C.sacredGold} />
           </Pressable>
-          <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 22, color: C.ivoryVellum }}>
+          <Text style={{ fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 22, color: C.ivoryVellum }}>
             Calendar
           </Text>
           <Text style={{ fontSize: 22 }}>🇺🇸</Text>
@@ -106,18 +109,22 @@ export default function Calendar() {
             paddingVertical: spacing.xs,
           }}
         >
-          <Pressable onPress={prevMonth} style={{ padding: spacing.s }}>
-            <MaterialCommunityIcons name="chevron-left" size={26} color={C.sacredGold} />
-          </Pressable>
+          <IconButton
+            icon="chevron-left"
+            accessibilityLabel="Previous month"
+            onPress={prevMonth}
+          />
           <View style={{ alignItems: "center" }}>
-            <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 22, color: C.sacredGold }}>
+            <Text style={{ fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 22, color: C.sacredGold }}>
               {MONTHS[month]}
             </Text>
-            <Text style={{ color: C.textSecondary, fontSize: 13 }}>{year}</Text>
+            <Text style={{ color: C.textSecondary, fontFamily: fonts.body, fontSize: 13 }}>{year}</Text>
           </View>
-          <Pressable onPress={nextMonth} style={{ padding: spacing.s }}>
-            <MaterialCommunityIcons name="chevron-right" size={26} color={C.sacredGold} />
-          </Pressable>
+          <IconButton
+            icon="chevron-right"
+            accessibilityLabel="Next month"
+            onPress={nextMonth}
+          />
         </View>
 
         <MonthGrid year={year} month={month} style={calStyle} />
@@ -128,9 +135,11 @@ export default function Calendar() {
           const color = getStrictnessColor(status.strictness);
           const progress = status.period ? getPeriodProgress(status.period, now) : null;
           return (
-            <Pressable
+            <PressableScale
               onPress={() => router.push("/fasting" as never)}
-              style={({ pressed }) => ({
+              haptic
+              accessibilityLabel="Today's fast"
+              style={{
                 marginHorizontal: spacing.m,
                 marginBottom: spacing.m,
                 borderRadius: radii.m,
@@ -138,32 +147,31 @@ export default function Calendar() {
                 borderColor: color,
                 backgroundColor: C.surfaceElevated,
                 overflow: "hidden",
-                opacity: pressed ? 0.85 : 1,
-              })}
+              }}
             >
               <View style={{ backgroundColor: color, paddingHorizontal: spacing.m, paddingVertical: 6, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-                  <MaterialCommunityIcons name={status.isFastFree ? "party-popper" : "fish"} size={13} color="rgba(245,235,221,0.9)" />
-                  <Text style={{ color: "rgba(245,235,221,0.9)", fontSize: 11, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" }}>
+                  <MaterialCommunityIcons name={status.isFastFree ? "party-popper" : "fish"} size={13} color={C.textOnAccent} />
+                  <Text style={{ color: C.textOnAccent, fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.8, textTransform: "uppercase" }}>
                     Today's Fast
                   </Text>
                 </View>
                 {status.period && (
-                  <Text style={{ color: "rgba(245,235,221,0.75)", fontSize: 11 }}>
+                  <Text style={{ color: C.overlayIvory75, fontFamily: fonts.body, fontSize: 11 }}>
                     {formatShortDate(status.period.startDate)} — {formatShortDate(status.period.endDate)}
                   </Text>
                 )}
               </View>
               <View style={{ padding: spacing.m }}>
-                <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 15, marginBottom: 2 }}>
+                <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 15, marginBottom: 2 }}>
                   {status.label}
                 </Text>
-                <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 13 }}>
+                <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 13 }}>
                   {status.sublabel}
                 </Text>
                 {progress && !status.isFastFree && (
                   <View style={{ marginTop: spacing.s }}>
-                    <View style={{ height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)" }}>
+                    <View style={{ height: 4, borderRadius: 2, backgroundColor: C.overlayWhite10 }}>
                       <View style={{ width: `${Math.round(progress.pct * 100)}%`, height: 4, borderRadius: 2, backgroundColor: color }} />
                     </View>
                     <Text style={{ color: C.textMuted, fontSize: 11, marginTop: 3 }}>
@@ -172,7 +180,7 @@ export default function Calendar() {
                   </View>
                 )}
               </View>
-            </Pressable>
+            </PressableScale>
           );
         })()}
 
@@ -190,12 +198,12 @@ export default function Calendar() {
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.s }}>
             <MaterialCommunityIcons name="music-note" size={16} color={C.sacredGold} />
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 15 }}>
+            <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 15 }}>
               Tone {toneNum} of the Week
             </Text>
           </View>
           {todayEntry?.saints?.length ? (
-            <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 13 }}>
+            <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 13 }}>
               {todayEntry.saints[0]}
             </Text>
           ) : null}
@@ -229,16 +237,16 @@ export default function Calendar() {
               borderColor: C.hairline,
             }}
           >
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 15, marginBottom: 6 }}>
+            <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 15, marginBottom: 6 }}>
               Sunday Readings
             </Text>
             {todayEntry.gospel ? (
-              <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 13, marginBottom: 4 }}>
+              <Text style={{ color: C.textPrimary, fontFamily: fonts.serif, fontSize: 13, marginBottom: 4 }}>
                 Gospel · {todayEntry.gospel.ref}
               </Text>
             ) : null}
             {todayEntry.epistle ? (
-              <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 13 }}>
+              <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 13 }}>
                 Epistle · {todayEntry.epistle.ref}
               </Text>
             ) : null}

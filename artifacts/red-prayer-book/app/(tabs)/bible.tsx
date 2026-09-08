@@ -17,6 +17,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
+import { fonts } from "@/theme/typography";
 import { addHighlight, listHighlights } from "@/lib/db";
 import { incrementBadge } from "@/lib/badges";
 import { BIBLE_SECTIONS, getBookById, type BibleBook } from "@/lib/bible-structure";
@@ -212,7 +213,7 @@ export default function Bible() {
       <View style={{ flex: 1 }}>
         {/* Header */}
         <View style={{ padding: spacing.m, alignItems: "center" }}>
-          <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 24, color: C.sacredGold }}>Holy Scripture</Text>
+          <Text style={{ fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 24, color: C.sacredGold }}>Holy Scripture</Text>
         </View>
 
         {/* Search Bar */}
@@ -233,7 +234,7 @@ export default function Bible() {
               onChangeText={handleSearchChange}
               placeholder="Search verses…"
               placeholderTextColor={C.textMuted}
-              style={{ flex: 1, color: C.textPrimary, fontSize: 14, fontFamily: "serif" }}
+              style={{ flex: 1, color: C.textPrimary, fontSize: 14, fontFamily: fonts.serif }}
               returnKeyType="search"
               clearButtonMode="while-editing"
               autoCorrect={false}
@@ -296,7 +297,7 @@ export default function Bible() {
                       <Text style={{ color: C.sacredGold, fontSize: 12, fontWeight: "700", marginBottom: 4 }}>
                         {book.name} {item.chapter}:{item.verse}
                       </Text>
-                      <Text style={{ color: C.textSecondary, fontSize: 13, fontFamily: "serif", lineHeight: 20 }} numberOfLines={3}>
+                      <Text style={{ color: C.textSecondary, fontSize: 13, fontFamily: fonts.serif, lineHeight: 20 }} numberOfLines={3}>
                         <Text>{before}</Text>
                         <Text style={{ color: C.sacredGold, fontWeight: "700" }}>{match}</Text>
                         <Text>{after}</Text>
@@ -338,7 +339,7 @@ export default function Bible() {
                 borderColor: testament === t ? C.sacredGold : C.hairline,
               }}
             >
-              <Text style={{ color: testament === t ? C.white : C.textSecondary, fontWeight: "600", fontSize: 13 }}>
+              <Text style={{ color: testament === t ? C.ivoryVellum : C.textSecondary, fontFamily: fonts.bodySemi, fontSize: 13 }}>
                 {t === "OT" ? "Old Testament" : "New Testament"}
               </Text>
             </Pressable>
@@ -399,7 +400,7 @@ export default function Bible() {
           <Pressable onPress={() => setView("books")} style={{ padding: 4 }}>
             <MaterialCommunityIcons name="chevron-left" size={28} color={C.sacredGold} />
           </Pressable>
-          <Text style={{ flex: 1, textAlign: "center", fontFamily: "serif", fontSize: 20, fontWeight: "700", color: C.sacredGold }}>
+          <Text style={{ flex: 1, textAlign: "center", fontFamily: fonts.serifBold, fontSize: 20, fontWeight: "700", color: C.sacredGold }}>
             {selectedBook.name}
           </Text>
           <Pressable style={{ padding: 4 }}>
@@ -463,7 +464,7 @@ export default function Bible() {
           <Pressable onPress={() => setView("chapters")} style={{ padding: 4 }}>
             <MaterialCommunityIcons name="chevron-left" size={28} color={C.sacredGold} />
           </Pressable>
-          <Text style={{ flex: 1, textAlign: "center", fontFamily: "serif", fontSize: 18, fontWeight: "700", color: C.sacredGold }}>
+          <Text style={{ flex: 1, textAlign: "center", fontFamily: fonts.serifBold, fontSize: 18, fontWeight: "700", color: C.sacredGold }}>
             {selectedBook.name} {selectedChapter}
           </Text>
           <Pressable style={{ padding: 4 }}>
@@ -489,7 +490,7 @@ export default function Bible() {
               onPress={() => loadChapter(selectedBook.id, selectedChapter)}
               style={{ backgroundColor: C.byzantineCrimson, paddingHorizontal: spacing.l, paddingVertical: spacing.s, borderRadius: radii.m }}
             >
-              <Text style={{ color: C.white, fontWeight: "600" }}>Retry</Text>
+              <Text style={{ color: C.ivoryVellum, fontFamily: fonts.bodySemi }}>Retry</Text>
             </Pressable>
           </View>
         ) : (
@@ -517,10 +518,10 @@ export default function Bible() {
                     borderLeftColor: C.sacredGold,
                   })}
                 >
-                  <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 14, width: 26, textAlign: "right", marginRight: spacing.s, lineHeight: 22 }}>
+                  <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 14, width: 26, textAlign: "right", marginRight: spacing.s, lineHeight: 22 }}>
                     {v.verse}
                   </Text>
-                  <Text style={{ color: isHighlighted ? C.ivoryVellum : C.textPrimary, flex: 1, fontFamily: "serif", fontSize: 16, lineHeight: 24 }}>
+                  <Text style={{ color: isHighlighted ? C.ivoryVellum : C.textPrimary, flex: 1, fontFamily: fonts.serif, fontSize: 16, lineHeight: 24 }}>
                     {v.text}
                   </Text>
                 </Pressable>
@@ -616,7 +617,7 @@ export default function Bible() {
           }}
         >
           <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.sacredGold, alignSelf: "center", marginBottom: spacing.m }} />
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16, textAlign: "center", marginBottom: spacing.m }}>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 16, textAlign: "center", marginBottom: spacing.m }}>
             Verse {selectedVerse}
           </Text>
           {[
@@ -639,7 +640,7 @@ export default function Bible() {
               })}
             >
               <MaterialCommunityIcons name={icon} size={22} color={C.sacredGold} />
-              <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 16 }}>{label}</Text>
+              <Text style={{ color: C.textPrimary, fontFamily: fonts.serif, fontSize: 16 }}>{label}</Text>
             </Pressable>
           ))}
         </View>

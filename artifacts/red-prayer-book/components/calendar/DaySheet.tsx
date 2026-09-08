@@ -1,6 +1,7 @@
 import { Modal, View, Text, ScrollView, Pressable } from 'react-native';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
+import { fonts } from '@/theme/typography';
 import { getCalendarEntry, julianShift } from '@/lib/calendar';
 import type { CalendarEntry } from '@/lib/calendar';
 
@@ -74,7 +75,7 @@ export function DaySheet({ visible, onClose, dayInfo, style }: Props) {
           </Text>
           <Text
             style={{
-              fontFamily: 'serif',
+              fontFamily: fonts.serifBold,
               fontWeight: '700',
               fontSize: 22,
               color: colors.sacredGold,
@@ -88,7 +89,7 @@ export function DaySheet({ visible, onClose, dayInfo, style }: Props) {
             <Text
               style={{
                 color: colors.textPrimary,
-                fontFamily: 'serif',
+                fontFamily: fonts.serif,
                 fontSize: 14,
                 marginBottom: spacing.s,
               }}
@@ -164,7 +165,7 @@ function ReadingSection({
       <Text
         style={{
           color: colors.sacredGold,
-          fontFamily: 'serif',
+          fontFamily: fonts.serifBold,
           fontWeight: '700',
           fontSize: 15,
           marginBottom: 6,
@@ -176,7 +177,7 @@ function ReadingSection({
         <Text
           style={{
             color: colors.textPrimary,
-            fontFamily: 'serif',
+            fontFamily: fonts.serifItalic,
             fontStyle: 'italic',
             fontSize: 14,
             lineHeight: 21,
