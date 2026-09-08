@@ -5,6 +5,7 @@ import {
   Inter_700Bold,
   useFonts,
 } from "@expo-google-fonts/inter";
+import { fonts } from "@/theme/typography";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -56,6 +57,9 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    [fonts.serif]: require("@/assets/fonts/Cardo-Regular.ttf"),
+    [fonts.serifBold]: require("@/assets/fonts/Cardo-Bold.ttf"),
+    [fonts.serifItalic]: require("@/assets/fonts/Cardo-Italic.ttf"),
   });
 
   const notifListenerRef = useRef<any>(null);
@@ -96,11 +100,10 @@ export default function RootLayout() {
   const removeNotificationListener = async () => {
     if (Platform.OS === 'web') return;
     try {
-      if (notifListenerRef.current) {
-        const N = await import('expo-notifications');
-        N.removeNotificationSubscription(notifListenerRef.current);
-        notifListenerRef.current = null;
-      }
+        if (notifListenerRef.current) {
+          notifListenerRef.current.remove();
+          notifListenerRef.current = null;
+        }
     } catch {}
   };
 
