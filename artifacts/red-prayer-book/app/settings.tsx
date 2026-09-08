@@ -11,6 +11,8 @@ import {
 } from "@/lib/notifications";
 import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
+import { fonts } from "@/theme/typography";
+import { PressableScale } from "@/components/ui/PressableScale";
 
 // ─── Time Picker Modal ────────────────────────────────────────────────────────
 
@@ -54,7 +56,7 @@ function TimePicker({ visible, hour, minute, label, onConfirm, onClose }: TimePi
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable
-        style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}
+        style={{ flex: 1, backgroundColor: C.scrim, justifyContent: "center", alignItems: "center" }}
         onPress={onClose}
       >
         <Pressable
@@ -79,7 +81,7 @@ function TimePicker({ visible, hour, minute, label, onConfirm, onClose }: TimePi
               alignItems: "center",
             }}
           >
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16 }}>
+            <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 16 }}>
               {label}
             </Text>
           </View>
@@ -193,15 +195,18 @@ function Column({
 }) {
   return (
     <View style={{ alignItems: "center", gap: spacing.xs }}>
-      <Pressable
+      <PressableScale
         onPress={onInc}
-        style={({ pressed }) => ({
-          padding: spacing.xs,
-          opacity: pressed ? 0.5 : 1,
-        })}
+        accessibilityLabel="Increase"
+        style={{
+          minWidth: 44,
+          minHeight: 44,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
         <MaterialCommunityIcons name="chevron-up" size={28} color={C.sacredGold} />
-      </Pressable>
+      </PressableScale>
       <View
         style={{
           backgroundColor: C.surface,
@@ -219,21 +224,24 @@ function Column({
             color: C.ivoryVellum,
             fontSize: 32,
             fontWeight: "700",
-            fontFamily: "serif",
+            fontFamily: fonts.serifBold,
           }}
         >
           {value}
         </Text>
       </View>
-      <Pressable
+      <PressableScale
         onPress={onDec}
-        style={({ pressed }) => ({
-          padding: spacing.xs,
-          opacity: pressed ? 0.5 : 1,
-        })}
+        accessibilityLabel="Decrease"
+        style={{
+          minWidth: 44,
+          minHeight: 44,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
         <MaterialCommunityIcons name="chevron-down" size={28} color={C.sacredGold} />
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }
@@ -286,7 +294,7 @@ function SettingsRow({
       })}
     >
       <View style={{ flex: 1 }}>
-        <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 15 }}>{label}</Text>
+        <Text style={{ color: C.textPrimary, fontFamily: fonts.serif, fontSize: 15 }}>{label}</Text>
         {subtitle ? (
           <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 2 }}>{subtitle}</Text>
         ) : null}
@@ -360,7 +368,7 @@ function ReminderRow({
       >
         <Text style={{ fontSize: 18, marginRight: spacing.s }}>{meta.icon}</Text>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 15 }}>
+          <Text style={{ color: C.textPrimary, fontFamily: fonts.serif, fontSize: 15 }}>
             {meta.label}
           </Text>
           <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 2 }}>
@@ -370,8 +378,8 @@ function ReminderRow({
         <Switch
           value={enabled}
           onValueChange={onToggle}
-          trackColor={{ false: "#333", true: C.byzantineCrimson }}
-          thumbColor={enabled ? C.sacredGold : "#666"}
+          trackColor={{ false: C.surfaceElevated, true: C.byzantineCrimson }}
+          thumbColor={enabled ? C.sacredGold : C.incenseSmoke}
         />
       </View>
 
@@ -390,7 +398,7 @@ function ReminderRow({
           })}
         >
           <MaterialCommunityIcons name="clock-outline" size={15} color={C.sacredGold} style={{ marginRight: spacing.xs }} />
-          <Text style={{ flex: 1, color: C.sacredGold, fontSize: 14, fontFamily: "serif" }}>
+          <Text style={{ flex: 1, color: C.sacredGold, fontSize: 14, fontFamily: fonts.serif }}>
             {fmt12(hour, minute)}
           </Text>
           <Text style={{ color: C.textMuted, fontSize: 12 }}>Change time ›</Text>
@@ -471,15 +479,15 @@ export default function Settings() {
           backgroundColor: C.surfaceElevated,
         }}
       >
-        <Pressable onPress={() => router.back()} style={{ padding: 4 }}>
-          <Text style={{ color: C.sacredGold, fontSize: 16 }}>Cancel</Text>
-        </Pressable>
-        <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 18, color: C.sacredGold }}>
+        <PressableScale onPress={() => router.back()} accessibilityLabel="Cancel" style={{ minHeight: 44, minWidth: 64, justifyContent: "center" }}>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.body, fontSize: 16 }}>Cancel</Text>
+        </PressableScale>
+        <Text style={{ fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 18, color: C.sacredGold }}>
           Settings
         </Text>
-        <Pressable onPress={() => router.back()} style={{ padding: 4 }}>
-          <Text style={{ color: C.sacredGold, fontWeight: "700", fontSize: 16 }}>Done</Text>
-        </Pressable>
+        <PressableScale onPress={() => router.back()} haptic accessibilityLabel="Done" style={{ minHeight: 44, minWidth: 64, alignItems: "flex-end", justifyContent: "center" }}>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.bodyBold, fontSize: 16 }}>Done</Text>
+        </PressableScale>
       </View>
 
       {/* Grabber */}
@@ -557,7 +565,7 @@ export default function Settings() {
               alignItems: "center",
             }}
           >
-            <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 15, flex: 1 }}>
+            <Text style={{ color: C.textPrimary, fontFamily: fonts.serif, fontSize: 15, flex: 1 }}>
               Calendar Style
             </Text>
             <View style={{ flexDirection: "row", gap: 8 }}>
@@ -635,7 +643,7 @@ export default function Settings() {
         </View>
 
         <View style={{ alignItems: "center", paddingTop: spacing.xl }}>
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontSize: 14, letterSpacing: 1 }}>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.serif, fontSize: 14, letterSpacing: 1 }}>
             ✟  Sacred Words. Timeless Faith.  ✟
           </Text>
           <Text style={{ color: C.textMuted, fontSize: 11, marginTop: 6 }}>

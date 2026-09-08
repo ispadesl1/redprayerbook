@@ -1,6 +1,6 @@
 import { View, Text, ViewStyle, StyleProp } from 'react-native';
 import { colors } from '@/theme/colors';
-import { radii } from '@/theme/spacing';
+import { radii, spacing } from '@/theme/spacing';
 
 export function FiligreeFrame({
   children,
@@ -16,7 +16,7 @@ export function FiligreeFrame({
           borderColor: colors.sacredGold,
           borderWidth: 1,
           borderRadius: radii.l,
-          padding: 16,
+          padding: spacing.m,
           backgroundColor: colors.byzantineCrimson,
           position: 'relative',
         },
@@ -45,12 +45,14 @@ function Corner({
 }) {
   return (
     <Text
+      accessibilityElementsHidden
+      importantForAccessibility="no"
       style={{
         position: 'absolute',
-        top: top ? 4 : undefined,
-        bottom: bottom ? 4 : undefined,
-        left: left ? 6 : undefined,
-        right: right ? 6 : undefined,
+        top: top ? spacing.xxs : undefined,
+        bottom: bottom ? spacing.xxs : undefined,
+        left: left ? spacing.xs : undefined,
+        right: right ? spacing.xs : undefined,
         color: colors.sacredGold,
         fontSize: 12,
       }}

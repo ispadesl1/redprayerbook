@@ -1,5 +1,6 @@
 import { View, Text } from 'react-native';
 import { colors } from '@/theme/colors';
+import { fonts } from '@/theme/typography';
 
 type Props = {
   index: number;
@@ -69,7 +70,7 @@ export function StaticPage({ index, side }: Props) {
 
         <Text
           style={{
-            fontFamily: 'serif',
+            fontFamily: fonts.serifBold,
             fontWeight: '700',
             fontSize: 18,
             color: colors.byzantineCrimson,
@@ -90,7 +91,7 @@ export function StaticPage({ index, side }: Props) {
 
         <Text
           style={{
-            fontFamily: 'serif',
+            fontFamily: fonts.serif,
             fontSize: 14,
             color: colors.deepOnyx,
             lineHeight: 22,

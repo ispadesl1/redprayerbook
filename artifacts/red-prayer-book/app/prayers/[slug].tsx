@@ -5,6 +5,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import { spacing, radii } from '@/theme/spacing';
+import { fonts } from '@/theme/typography';
 import {
   getPrayerBySlug,
   Prayer,
@@ -31,7 +32,7 @@ function BackButton() {
       })}
     >
       <Text style={{ color: colors.sacredGold, fontSize: 20, marginRight: 4 }}>‹</Text>
-      <Text style={{ color: colors.sacredGold, fontSize: 13, fontFamily: 'serif' }}>
+      <Text style={{ color: colors.sacredGold, fontSize: 13, fontFamily: fonts.serif }}>
         Prayer Book
       </Text>
     </Pressable>
@@ -71,7 +72,7 @@ function Rubric({ text }: { text: string }) {
     >
       <Text
         style={{
-          fontFamily: 'serif',
+          fontFamily: fonts.serifItalic,
           fontStyle: 'italic',
           fontSize: 13,
           color: colors.textSecondary,
@@ -103,7 +104,7 @@ function PrayerText({ text }: { text: string }) {
             <Text
               key={idx}
               style={{
-                fontFamily: 'serif',
+                fontFamily: fonts.serifBold,
                 fontWeight: '700',
                 fontSize: 14,
                 color: colors.sacredGold,
@@ -123,7 +124,7 @@ function PrayerText({ text }: { text: string }) {
             <Text
               key={idx}
               style={{
-                fontFamily: 'serif',
+                fontFamily: fonts.serifItalic,
                 fontStyle: 'italic',
                 fontSize: 13,
                 color: colors.textMuted,
@@ -145,7 +146,7 @@ function PrayerText({ text }: { text: string }) {
                 <Text
                   key={li}
                   style={{
-                    fontFamily: 'serif',
+                    fontFamily: fonts.serif,
                     fontSize: 15,
                     color: /^(PRIEST|CHOIR|PEOPLE|READER)/.test(line.trim())
                       ? colors.martyrRed
@@ -169,7 +170,7 @@ function PrayerText({ text }: { text: string }) {
           <Text
             key={idx}
             style={{
-              fontFamily: 'serif',
+              fontFamily: fonts.serif,
               fontSize: 16,
               color: colors.textPrimary,
               lineHeight: 28,
@@ -224,7 +225,7 @@ function ListContent({ items }: { items: string[] }) {
           </View>
           <Text
             style={{
-              fontFamily: 'serif',
+              fontFamily: fonts.serif,
               fontSize: 16,
               color: colors.textPrimary,
               lineHeight: 26,
@@ -282,7 +283,7 @@ function SectionNavPills({ currentSlug }: { currentSlug: string }) {
             style={{
               color: colors.sacredGold,
               fontSize: 13,
-              fontFamily: 'serif',
+              fontFamily: fonts.serifBold,
               fontWeight: '600',
               marginTop: 2,
             }}
@@ -320,7 +321,7 @@ function SectionNavPills({ currentSlug }: { currentSlug: string }) {
             style={{
               color: colors.sacredGold,
               fontSize: 13,
-              fontFamily: 'serif',
+              fontFamily: fonts.serifBold,
               fontWeight: '600',
               marginTop: 2,
             }}
@@ -457,7 +458,7 @@ export default function PrayerDetail() {
         >
           <Text
             style={{
-              fontFamily: 'serif',
+              fontFamily: fonts.serifBold,
               fontWeight: '700',
               fontSize: 22,
               color: colors.sacredGold,
@@ -471,7 +472,7 @@ export default function PrayerDetail() {
           {prayer.subtitle ? (
             <Text
               style={{
-                fontFamily: 'serif',
+                fontFamily: fonts.serifItalic,
                 fontStyle: 'italic',
                 fontSize: 13,
                 color: colors.textMuted,

@@ -15,6 +15,9 @@ import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
+import { fonts } from "@/theme/typography";
+import { IconButton } from "@/components/ui/IconButton";
+import { PressableScale } from "@/components/ui/PressableScale";
 
 const API_BASE = `${process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : ""}/api`;
 
@@ -204,7 +207,7 @@ export default function CompanionScreen() {
           <Text
             style={{
               color: isUser ? C.sacredGold : C.textPrimary,
-              fontFamily: "serif",
+              fontFamily: fonts.serif,
               fontSize: 15,
               lineHeight: 22,
             }}
@@ -224,7 +227,7 @@ export default function CompanionScreen() {
       <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: C.surfaceDeep, alignItems: "center", justifyContent: "center" }}>
         <MaterialCommunityIcons name="cross" size={40} color={C.sacredGold} style={{ marginBottom: spacing.m }} />
         <ActivityIndicator color={C.sacredGold} size="large" />
-        <Text style={{ color: C.textMuted, fontFamily: "serif", marginTop: spacing.m }}>
+        <Text style={{ color: C.textMuted, fontFamily: fonts.serif, marginTop: spacing.m }}>
           Preparing your spiritual companion…
         </Text>
       </SafeAreaView>
@@ -245,12 +248,11 @@ export default function CompanionScreen() {
           backgroundColor: C.surfaceElevated,
         }}
       >
-        <Pressable
+        <IconButton
+          icon="chevron-left"
+          accessibilityLabel="Go back"
           onPress={() => router.back()}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, marginRight: spacing.m })}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={26} color={C.sacredGold} />
-        </Pressable>
+        />
         <View
           style={{
             width: 38,
@@ -267,7 +269,7 @@ export default function CompanionScreen() {
           <MaterialCommunityIcons name="cross" size={18} color={C.sacredGold} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16 }}>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 16 }}>
             Father Seraphim
           </Text>
           <Text style={{ color: C.textMuted, fontSize: 11 }}>
@@ -301,10 +303,10 @@ export default function CompanionScreen() {
               >
                 <MaterialCommunityIcons name="cross" size={34} color={C.sacredGold} />
               </View>
-              <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 22, textAlign: "center", marginBottom: spacing.s }}>
+              <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 22, textAlign: "center", marginBottom: spacing.s }}>
                 Glory to God for All Things
               </Text>
-              <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 14, textAlign: "center", lineHeight: 22 }}>
+              <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 14, textAlign: "center", lineHeight: 22 }}>
                 I am Father Seraphim, your Orthodox spiritual companion. Ask me about prayers, the saints, fasting, the sacraments, or anything on your heart.
               </Text>
             </View>
@@ -328,7 +330,7 @@ export default function CompanionScreen() {
                       paddingVertical: 8,
                     })}
                   >
-                    <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 13 }}>{s}</Text>
+                    <Text style={{ color: C.textPrimary, fontFamily: fonts.serif, fontSize: 13 }}>{s}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -363,7 +365,7 @@ export default function CompanionScreen() {
             style={{
               flex: 1,
               color: C.textPrimary,
-              fontFamily: "serif",
+              fontFamily: fonts.serif,
               fontSize: 15,
               lineHeight: 22,
               backgroundColor: C.surface,
@@ -382,10 +384,12 @@ export default function CompanionScreen() {
             returnKeyType="default"
             editable={!loading}
           />
-          <Pressable
+          <PressableScale
             onPress={() => sendMessage(input)}
             disabled={!input.trim() || loading}
-            style={({ pressed }) => ({
+            haptic
+            accessibilityLabel="Send message"
+            style={{
               width: 44,
               height: 44,
               borderRadius: 22,
@@ -396,8 +400,7 @@ export default function CompanionScreen() {
               borderWidth: 1,
               borderColor:
                 !input.trim() || loading ? C.hairline : C.sacredGold,
-              opacity: pressed ? 0.75 : 1,
-            })}
+            }}
           >
             {loading ? (
               <ActivityIndicator size="small" color={C.sacredGold} />
@@ -408,7 +411,7 @@ export default function CompanionScreen() {
                 color={!input.trim() ? C.textMuted : C.sacredGold}
               />
             )}
-          </Pressable>
+          </PressableScale>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

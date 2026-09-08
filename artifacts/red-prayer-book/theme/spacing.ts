@@ -1,3 +1,5 @@
+import { colors } from './colors';
+
 export const spacing = {
   xxs: 4,
   xs: 8,
@@ -17,9 +19,19 @@ export const radii = {
   pill: 999,
 };
 
+export const hitTarget = 44;
+
+export const motion = {
+  pressInMs: 120,
+  pressOutMs: 140,
+  enterMs: 280,
+  staggerMs: 45,
+  scalePress: 0.97,
+};
+
 export const shadows = {
   card: {
-    shadowColor: '#0E0E10',
+    shadowColor: colors.deepOnyx,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,

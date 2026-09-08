@@ -2,6 +2,7 @@ import { forwardRef, useState, useImperativeHandle, useRef } from 'react';
 import { View, Text, TextInput, Pressable, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { colors } from '@/theme/colors';
 import { spacing, radii } from '@/theme/spacing';
+import { fonts } from '@/theme/typography';
 
 type Props = {
   totalPages: number;
@@ -68,7 +69,7 @@ export function PageJumpSheet({
               fontWeight: '700',
               color: colors.sacredGold,
               textAlign: 'center',
-              fontFamily: 'serif',
+              fontFamily: fonts.serifBold,
               marginBottom: spacing.l,
             }}
           >
@@ -115,7 +116,7 @@ export function PageJumpSheet({
                 keyboardType="number-pad"
                 returnKeyType="go"
                 style={{
-                  fontFamily: 'serif',
+                  fontFamily: fonts.serifBold,
                   fontWeight: '700',
                   fontSize: 36,
                   color: colors.sacredGold,
@@ -129,7 +130,7 @@ export function PageJumpSheet({
               <Text
                 style={{
                   color: colors.textSecondary,
-                  fontFamily: 'serif',
+                  fontFamily: fonts.serif,
                   marginLeft: 8,
                 }}
               >
@@ -169,7 +170,7 @@ export function PageJumpSheet({
               style={{
                 color: colors.ivoryVellum,
                 fontWeight: '700',
-                fontFamily: 'serif',
+                fontFamily: fonts.serifBold,
                 fontSize: 16,
               }}
             >

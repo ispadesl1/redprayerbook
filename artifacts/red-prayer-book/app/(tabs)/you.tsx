@@ -7,6 +7,9 @@ import { BadgeItem } from "@/components/ui/BadgeItem";
 import { CrossDivider } from "@/components/ui/CrossDivider";
 import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
+import { fonts } from "@/theme/typography";
+import { IconButton } from "@/components/ui/IconButton";
+import { PressableScale } from "@/components/ui/PressableScale";
 import { BADGE_DEFS, getAllBadgeProgress } from "@/lib/badges";
 import { getStreakData, recordStreakToday, type StreakData } from "@/lib/db";
 
@@ -68,7 +71,7 @@ function StreakCard({ data }: { data: StreakData }) {
             <Text
               style={{
                 color: currentStreak > 0 ? C.ivoryVellum : C.textMuted,
-                fontFamily: "serif",
+                fontFamily: fonts.serifBold,
                 fontWeight: "700",
                 fontSize: 40,
                 lineHeight: 44,
@@ -79,7 +82,7 @@ function StreakCard({ data }: { data: StreakData }) {
             <Text
               style={{
                 color: C.textMuted,
-                fontFamily: "serif",
+                fontFamily: fonts.serif,
                 fontSize: 15,
                 marginBottom: 4,
               }}
@@ -106,7 +109,7 @@ function StreakCard({ data }: { data: StreakData }) {
             style={{
               height: 5,
               borderRadius: 3,
-              backgroundColor: "rgba(255,255,255,0.08)",
+              backgroundColor: C.overlayWhite08,
               overflow: "hidden",
             }}
           >
@@ -147,7 +150,7 @@ function StreakCard({ data }: { data: StreakData }) {
                 borderRadius: radii.s,
                 backgroundColor: reached
                   ? C.byzantineCrimson + "55"
-                  : "rgba(255,255,255,0.05)",
+                  : C.overlayWhite05,
                 borderWidth: 1,
                 borderColor: reached ? C.sacredGold + "88" : C.hairline,
               }}
@@ -200,7 +203,7 @@ function StreakCard({ data }: { data: StreakData }) {
               <Text
                 style={{
                   color: C.ivoryVellum,
-                  fontFamily: "serif",
+                  fontFamily: fonts.serifBold,
                   fontWeight: "700",
                   fontSize: 17,
                 }}
@@ -252,22 +255,21 @@ export default function You() {
         showsVerticalScrollIndicator={false}
       >
         {/* Top right actions */}
-        <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: spacing.m, marginBottom: spacing.m }}>
-          {(["qrcode", "cog-outline", "menu"] as const).map((icon) => (
-            <Pressable
-              key={icon}
-              onPress={() => { if (icon === "cog-outline") router.push("/settings"); }}
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-            >
-              <MaterialCommunityIcons name={icon} size={22} color={C.sacredGold} />
-            </Pressable>
-          ))}
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: spacing.xs, marginBottom: spacing.m }}>
+          <IconButton icon="qrcode" accessibilityLabel="QR code" />
+          <IconButton
+            icon="cog-outline"
+            accessibilityLabel="Settings"
+            onPress={() => router.push("/settings")}
+            haptic
+          />
+          <IconButton icon="menu" accessibilityLabel="Menu" />
         </View>
 
         {/* Profile row */}
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.m }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 28, color: C.ivoryVellum }}>
+            <Text style={{ fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 28, color: C.ivoryVellum }}>
               Andy Acevedo
             </Text>
             <View style={{ flexDirection: "row", gap: spacing.xs, marginTop: spacing.xs }}>
@@ -296,78 +298,84 @@ export default function You() {
                 alignItems: "center", justifyContent: "center",
               }}
             >
-              <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 30 }}>A</Text>
+              <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 30 }}>A</Text>
             </View>
-            <Pressable
+            <PressableScale
+              accessibilityLabel="Change profile photo"
               style={{
                 position: "absolute", bottom: 0, right: 0,
-                width: 24, height: 24, borderRadius: 12,
+                width: 28, height: 28, borderRadius: 14,
                 backgroundColor: C.sacredGold,
                 alignItems: "center", justifyContent: "center",
               }}
             >
               <MaterialCommunityIcons name="camera" size={13} color={C.deepOnyx} />
-            </Pressable>
+            </PressableScale>
           </View>
         </View>
 
         {/* Compose a Prayer banner */}
-        <Pressable
+        <PressableScale
           onPress={() => router.push("/intention")}
-          style={({ pressed }) => ({
+          haptic
+          accessibilityLabel="Compose a Prayer"
+          style={{
             flexDirection: "row", alignItems: "center", gap: spacing.m,
             paddingVertical: spacing.m, paddingHorizontal: spacing.m,
             borderColor: C.hairline, borderWidth: 1, borderRadius: radii.m,
             marginBottom: spacing.s,
-            backgroundColor: pressed ? C.surface : C.surfaceElevated,
-            opacity: pressed ? 0.9 : 1,
-          })}
+            backgroundColor: C.surfaceElevated,
+            minHeight: 44,
+          }}
         >
           <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.byzantineCrimson, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: C.sacredGold }}>
             <MaterialCommunityIcons name="hands-pray" size={22} color={C.sacredGold} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: C.textPrimary, fontFamily: "serif", fontWeight: "700", fontSize: 15 }}>Compose a Prayer</Text>
+            <Text style={{ color: C.textPrimary, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 15 }}>Compose a Prayer</Text>
             <Text style={{ color: C.textMuted, fontSize: 12, marginTop: 2 }}>Enter your intention — receive a personal Orthodox prayer</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={20} color={C.sacredGold} />
-        </Pressable>
+        </PressableScale>
 
         {/* AI Spiritual Companion banner */}
-        <Pressable
+        <PressableScale
           onPress={() => router.push("/companion")}
-          style={({ pressed }) => ({
+          haptic
+          accessibilityLabel="Spiritual Companion"
+          style={{
             flexDirection: "row", alignItems: "center", gap: spacing.m,
             paddingVertical: spacing.m, paddingHorizontal: spacing.m,
             borderColor: C.sacredGold, borderWidth: 1, borderRadius: radii.m,
             marginBottom: spacing.s,
-            backgroundColor: pressed ? C.surface : C.byzantineCrimson,
-            opacity: pressed ? 0.9 : 1,
-          })}
+            backgroundColor: C.byzantineCrimson,
+            minHeight: 44,
+          }}
         >
           <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: C.surfaceDeep, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: C.sacredGold }}>
             <MaterialCommunityIcons name="cross" size={22} color={C.sacredGold} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 15 }}>Spiritual Companion</Text>
+            <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 15 }}>Spiritual Companion</Text>
             <Text style={{ color: C.textSecondary, fontSize: 12, marginTop: 2 }}>Ask Father Seraphim about prayers & faith</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={20} color={C.sacredGold} />
-        </Pressable>
+        </PressableScale>
 
         {/* Add your church */}
-        <Pressable
+        <PressableScale
           onPress={() => setChurchModal(true)}
-          style={({ pressed }) => ({
+          accessibilityLabel="Add Your Church"
+          style={{
             flexDirection: "row", alignItems: "center", justifyContent: "center",
             gap: spacing.xs, paddingVertical: spacing.m,
             borderColor: C.sacredGold, borderWidth: 1, borderRadius: radii.m,
-            marginBottom: spacing.m, opacity: pressed ? 0.7 : 1,
-          })}
+            marginBottom: spacing.m, minHeight: 44,
+          }}
         >
           <MaterialCommunityIcons name="church" size={18} color={C.sacredGold} />
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "600", fontSize: 15 }}>Add Your Church</Text>
-        </Pressable>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "600", fontSize: 15 }}>Add Your Church</Text>
+        </PressableScale>
 
         {/* Stat tiles */}
         <View style={{ flexDirection: "row", gap: spacing.xs, marginBottom: spacing.m }}>
@@ -386,7 +394,7 @@ export default function You() {
               })}
             >
               <MaterialCommunityIcons name={icon} size={24} color={C.sacredGold} />
-              <Text style={{ color: C.textPrimary, fontFamily: "serif", fontWeight: "600", fontSize: 13 }}>{label}</Text>
+              <Text style={{ color: C.textPrimary, fontFamily: fonts.serifBold, fontWeight: "600", fontSize: 13 }}>{label}</Text>
             </Pressable>
           ))}
         </View>
@@ -406,7 +414,7 @@ export default function You() {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: spacing.m }}>
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 17, flex: 1 }}>
+            <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 17, flex: 1 }}>
               {BADGE_DEFS.length} Badges
             </Text>
             <MaterialCommunityIcons name="medal-outline" size={22} color={C.sacredGold} />
@@ -434,7 +442,7 @@ export default function You() {
         <CrossDivider />
 
         {/* Activity */}
-        <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 22, color: C.ivoryVellum, marginTop: spacing.s, marginBottom: spacing.s }}>
+        <Text style={{ fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 22, color: C.ivoryVellum, marginTop: spacing.s, marginBottom: spacing.s }}>
           Activity
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.m }}>
@@ -476,9 +484,9 @@ export default function You() {
                 marginRight: spacing.m, borderWidth: 1, borderColor: C.sacredGold,
               }}
             >
-              <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16 }}>A</Text>
+              <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 16 }}>A</Text>
             </View>
-            <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 14, flex: 1, lineHeight: 20 }}>{item.text}</Text>
+            <Text style={{ color: C.textPrimary, fontFamily: fonts.serif, fontSize: 14, flex: 1, lineHeight: 20 }}>{item.text}</Text>
             <Text style={{ color: C.textMuted, fontSize: 12, marginLeft: spacing.s }}>{item.when}</Text>
           </View>
         ))}
@@ -486,15 +494,15 @@ export default function You() {
 
       {/* Add Church Modal */}
       <Modal visible={churchModal} transparent animationType="slide" onRequestClose={() => setChurchModal(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }} onPress={() => setChurchModal(false)} />
+        <Pressable style={{ flex: 1, backgroundColor: C.scrim }} onPress={() => setChurchModal(false)} />
         <View style={{ backgroundColor: C.surfaceElevated, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: C.hairline, padding: spacing.l, paddingBottom: spacing.xxl }}>
           <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.sacredGold, alignSelf: "center", marginBottom: spacing.m }} />
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 20, textAlign: "center", marginBottom: spacing.m }}>Add Your Church</Text>
-          <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 14, textAlign: "center", marginBottom: spacing.l }}>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 20, textAlign: "center", marginBottom: spacing.m }}>Add Your Church</Text>
+          <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 14, textAlign: "center", marginBottom: spacing.l }}>
             Connect with your parish community to share prayers and events.
           </Text>
           <Pressable onPress={() => setChurchModal(false)} style={({ pressed }) => ({ backgroundColor: pressed ? C.surface : C.byzantineCrimson, paddingVertical: spacing.m, borderRadius: radii.pill, alignItems: "center", borderWidth: 1, borderColor: C.sacredGold })}>
-            <Text style={{ color: C.sacredGold, fontWeight: "700", fontFamily: "serif" }}>Coming Soon</Text>
+            <Text style={{ color: C.sacredGold, fontWeight: "700", fontFamily: fonts.serifBold }}>Coming Soon</Text>
           </Pressable>
         </View>
       </Modal>
@@ -502,15 +510,15 @@ export default function You() {
       {/* Badge Detail Modal */}
       {selectedBadgeDef && (
         <Modal visible={!!badgeDetailModal} transparent animationType="slide" onRequestClose={() => setBadgeDetailModal(null)}>
-          <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)" }} onPress={() => setBadgeDetailModal(null)} />
+          <Pressable style={{ flex: 1, backgroundColor: C.scrim }} onPress={() => setBadgeDetailModal(null)} />
           <View style={{ backgroundColor: C.surfaceElevated, borderTopLeftRadius: 20, borderTopRightRadius: 20, borderTopWidth: 1, borderColor: C.hairline, padding: spacing.l, paddingBottom: spacing.xxl, alignItems: "center" }}>
             <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.sacredGold, alignSelf: "center", marginBottom: spacing.m }} />
             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: C.surface, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: selectedBadgeDef.color, marginBottom: spacing.m }}>
               <MaterialCommunityIcons name={selectedBadgeDef.mciIcon as any} size={36} color={selectedBadgeDef.color} />
             </View>
-            <Text style={{ fontFamily: "serif", fontWeight: "700", fontSize: 22, color: C.sacredGold, marginBottom: 6 }}>{selectedBadgeDef.label}</Text>
-            <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 14, textAlign: "center", marginBottom: spacing.m }}>{selectedBadgeDef.description}</Text>
-            <View style={{ width: "100%", height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.1)", marginBottom: 8 }}>
+            <Text style={{ fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 22, color: C.sacredGold, marginBottom: 6 }}>{selectedBadgeDef.label}</Text>
+            <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 14, textAlign: "center", marginBottom: spacing.m }}>{selectedBadgeDef.description}</Text>
+            <View style={{ width: "100%", height: 6, borderRadius: 3, backgroundColor: C.overlayWhite10, marginBottom: 8 }}>
               <View style={{ width: `${Math.round((selectedProgress / selectedBadgeDef.max) * 100)}%`, height: 6, borderRadius: 3, backgroundColor: selectedBadgeDef.color }} />
             </View>
             <Text style={{ color: C.textMuted, fontSize: 13 }}>

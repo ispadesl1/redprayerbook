@@ -1,7 +1,8 @@
-import { Pressable, View, Text, Image } from 'react-native';
-import { FiligreeFrame } from '@/components/ui/FiligreeFrame';
+import { View, Text, Image } from 'react-native';
 import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
+import { fonts, type } from '@/theme/typography';
+import { radii, spacing } from '@/theme/spacing';
+import { PressableScale } from '@/components/ui/PressableScale';
 
 export function TodaysPrayerCard({
   quote,
@@ -11,65 +12,88 @@ export function TodaysPrayerCard({
   onPress?: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
-      <FiligreeFrame>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View
+    <PressableScale
+      onPress={onPress}
+      haptic={!!onPress}
+      accessibilityLabel="Today's Prayer"
+      style={{
+        marginHorizontal: spacing.m,
+        marginBottom: spacing.s,
+        borderRadius: radii.l,
+        borderWidth: 1,
+        borderColor: colors.sacredGold,
+        overflow: 'hidden',
+        backgroundColor: colors.byzantineCrimson,
+      }}
+    >
+      {[
+        { top: 6, left: 8 },
+        { top: 6, right: 8 },
+        { bottom: 6, left: 8 },
+        { bottom: 6, right: 8 },
+      ].map((pos, i) => (
+        <Text
+          key={i}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+          style={{
+            position: 'absolute',
+            ...pos,
+            color: colors.sacredGold,
+            fontSize: 11,
+            zIndex: 2,
+          }}
+        >
+          ❦
+        </Text>
+      ))}
+
+      <View style={{ flexDirection: 'row', minHeight: 160 }}>
+        <View style={{ width: 130, backgroundColor: colors.surfaceDeep }}>
+          <Image
+            source={require('@/assets/images/saint-nicholas.png')}
+            style={{ width: 130, height: '100%', minHeight: 160 }}
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+          />
+        </View>
+
+        <View style={{ flex: 1, padding: spacing.m, justifyContent: 'center' }}>
+          <Text
             style={{
-              width: 88,
-              height: 110,
-              borderRadius: 8,
-              backgroundColor: colors.surface,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: spacing.m,
-              borderWidth: 1,
-              borderColor: colors.hairline,
-              overflow: 'hidden',
+              ...type.title,
+              color: colors.sacredGold,
             }}
           >
-            <Image
-              source={require('@/assets/images/saint-nicholas.png')}
-              style={{ width: 88, height: 110 }}
-              resizeMode="cover"
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontSize: 22,
-                fontWeight: '700',
-                color: colors.sacredGold,
-                marginBottom: 6,
-                fontFamily: 'serif',
-              }}
-            >
-              Today's Prayer
+            Today's Prayer
+          </Text>
+          <Text
+            style={{
+              fontFamily: fonts.serifItalic,
+              fontSize: 13,
+              color: colors.textOnAccent,
+              lineHeight: 20,
+              marginTop: spacing.xs,
+            }}
+          >
+            {quote}
+          </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginTop: spacing.s,
+            }}
+            accessibilityElementsHidden
+          >
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.hairline }} />
+            <Text style={{ color: colors.sacredGold, marginHorizontal: spacing.xs, fontSize: 14 }}>
+              ✟
             </Text>
-            <Text
-              style={{
-                fontFamily: 'serif',
-                fontStyle: 'italic',
-                fontSize: 13,
-                color: colors.ivoryVellum,
-                lineHeight: 19,
-              }}
-            >
-              {quote}
-            </Text>
-            <Text
-              style={{
-                color: colors.sacredGold,
-                marginTop: spacing.s,
-                textAlign: 'center',
-                letterSpacing: 2,
-              }}
-            >
-              — ✟ —
-            </Text>
+            <View style={{ flex: 1, height: 1, backgroundColor: colors.hairline }} />
           </View>
         </View>
-      </FiligreeFrame>
-    </Pressable>
+      </View>
+    </PressableScale>
   );
 }

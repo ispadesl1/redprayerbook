@@ -1,44 +1,57 @@
-import { Pressable, Text } from 'react-native';
+import { Text } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
-import { radii } from '@/theme/spacing';
+import { fonts } from '@/theme/typography';
+import { hitTarget, radii, spacing } from '@/theme/spacing';
+import { PressableScale } from '@/components/ui/PressableScale';
+
+type MCI = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 export function QuickTile({
-  glyph,
+  icon,
   label,
   onPress,
+  size,
 }: {
-  glyph: string;
+  icon: MCI;
   label: string;
   onPress?: () => void;
+  size: number;
 }) {
+  const a11yLabel = label.replace(/\n/g, ' ');
+
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: pressed ? colors.surface : colors.byzantineCrimson,
+      haptic
+      accessibilityLabel={a11yLabel}
+      style={{
+        width: size,
+        height: Math.max(size, hitTarget),
+        backgroundColor: colors.byzantineCrimson,
         borderColor: colors.sacredGold,
         borderWidth: 1,
         borderRadius: radii.m,
-        paddingVertical: 18,
         alignItems: 'center',
-        opacity: pressed ? 0.85 : 1,
-      })}
+        justifyContent: 'center',
+        paddingHorizontal: spacing.xxs,
+        gap: spacing.xxs,
+      }}
     >
-      <Text style={{ color: colors.sacredGold, fontSize: 26, marginBottom: 6 }}>
-        {glyph}
-      </Text>
+      <MaterialCommunityIcons name={icon} size={26} color={colors.sacredGold} />
       <Text
         style={{
-          color: colors.sacredGold,
+          color: colors.textOnAccent,
+          fontFamily: fonts.bodyBold,
           fontSize: 10,
-          letterSpacing: 1.4,
+          letterSpacing: 0.6,
           textAlign: 'center',
-          fontWeight: '600',
           textTransform: 'uppercase',
+          lineHeight: 13,
         }}
       >
         {label}
       </Text>
-    </Pressable>
+    </PressableScale>
   );
 }

@@ -1,10 +1,13 @@
 import { useState, useMemo } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors as C } from "@/theme/colors";
 import { spacing, radii } from "@/theme/spacing";
+import { fonts } from "@/theme/typography";
+import { IconButton } from "@/components/ui/IconButton";
+import { PressableScale } from "@/components/ui/PressableScale";
 import {
   getFastingPeriods,
   getTodayFastStatus,
@@ -34,7 +37,7 @@ function StrictnessBar({ strictness }: { strictness: FastStrictness }) {
             width: 8,
             height: 8,
             borderRadius: 2,
-            backgroundColor: i < filled ? color : "rgba(255,255,255,0.12)",
+            backgroundColor: i < filled ? color : C.overlayWhite12,
           }}
         />
       ))}
@@ -74,12 +77,12 @@ function PeriodCard({
         opacity: isPast ? 0.55 : 1,
       }}
     >
-      <Pressable
+      <PressableScale
         onPress={() => setExpanded((e) => !e)}
-        style={({ pressed }) => ({
+        accessibilityLabel={`${period.name}, ${expanded ? "collapse" : "expand"}`}
+        style={{
           padding: spacing.m,
-          backgroundColor: pressed ? C.surface : "transparent",
-        })}
+        }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.s }}>
           {/* Icon */}
@@ -88,11 +91,11 @@ function PeriodCard({
               width: 42,
               height: 42,
               borderRadius: 21,
-              backgroundColor: isPast ? "rgba(255,255,255,0.05)" : period.color,
+              backgroundColor: isPast ? C.overlayWhite05 : period.color,
               alignItems: "center",
               justifyContent: "center",
               borderWidth: 1,
-              borderColor: isPast ? C.hairline : "rgba(255,255,255,0.2)",
+              borderColor: isPast ? C.hairline : C.overlayWhite20,
             }}
           >
             <MaterialCommunityIcons
@@ -108,7 +111,7 @@ function PeriodCard({
               <Text
                 style={{
                   color: isActive ? C.sacredGold : isPast ? C.textMuted : C.textPrimary,
-                  fontFamily: "serif",
+                  fontFamily: fonts.serifBold,
                   fontWeight: "700",
                   fontSize: 15,
                   flex: 1,
@@ -154,7 +157,7 @@ function PeriodCard({
         {/* Progress bar for active period */}
         {isActive && progress && (
           <View style={{ marginTop: spacing.s }}>
-            <View style={{ height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)" }}>
+            <View style={{ height: 4, borderRadius: 2, backgroundColor: C.overlayWhite10 }}>
               <View
                 style={{
                   width: `${Math.round(progress.pct * 100)}%`,
@@ -170,7 +173,7 @@ function PeriodCard({
             </View>
           </View>
         )}
-      </Pressable>
+      </PressableScale>
 
       {expanded && (
         <View
@@ -181,15 +184,15 @@ function PeriodCard({
             borderColor: C.hairline,
           }}
         >
-          <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 13, lineHeight: 20, marginTop: spacing.s, marginBottom: spacing.s }}>
+          <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 13, lineHeight: 20, marginTop: spacing.s, marginBottom: spacing.s }}>
             {period.description}
           </Text>
           {period.rules.map((rule, i) => (
             <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.xs, marginBottom: 4 }}>
               <MaterialCommunityIcons
-                name={period.fastFree ? "check-circle-outline" : "cross-circle-outline"}
+                name={period.fastFree ? "check-circle-outline" : "close-circle-outline"}
                 size={13}
-                color={period.fastFree ? "#276A3D" : period.color}
+                color={period.fastFree ? C.liturgicalGreen : period.color}
                 style={{ marginTop: 2 }}
               />
               <Text style={{ color: C.textSecondary, fontSize: 13, flex: 1, lineHeight: 18 }}>{rule}</Text>
@@ -224,14 +227,13 @@ export default function FastingScreen() {
           backgroundColor: C.surfaceElevated,
         }}
       >
-        <Pressable
+        <IconButton
+          icon="chevron-left"
+          accessibilityLabel="Go back"
           onPress={() => router.back()}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, marginRight: spacing.m })}
-        >
-          <MaterialCommunityIcons name="chevron-left" size={26} color={C.sacredGold} />
-        </Pressable>
+        />
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16 }}>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 16 }}>
             Fasting Calendar
           </Text>
           <Text style={{ color: C.textMuted, fontSize: 11 }}>Orthodox fasting periods · {year}</Text>
@@ -255,18 +257,18 @@ export default function FastingScreen() {
             <MaterialCommunityIcons
               name={status.isFastFree ? "party-popper" : status.isFasting ? "cross" : "check"}
               size={14}
-              color="rgba(245,235,221,0.9)"
+              color={C.textOnAccent}
             />
-            <Text style={{ color: "rgba(245,235,221,0.9)", fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" }}>
+            <Text style={{ color: C.textOnAccent, fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" }}>
               {today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
             </Text>
           </View>
 
           <View style={{ backgroundColor: C.surfaceElevated, padding: spacing.l }}>
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 22, marginBottom: 4 }}>
+            <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 22, marginBottom: 4 }}>
               {status.label}
             </Text>
-            <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 13, marginBottom: spacing.m }}>
+            <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 13, marginBottom: spacing.m }}>
               {status.sublabel}
             </Text>
 
@@ -275,7 +277,7 @@ export default function FastingScreen() {
               const prog = getPeriodProgress(status.period, today);
               return (
                 <View style={{ marginBottom: spacing.m }}>
-                  <View style={{ height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.1)" }}>
+                  <View style={{ height: 6, borderRadius: 3, backgroundColor: C.overlayWhite10 }}>
                     <View style={{ width: `${Math.round(prog.pct * 100)}%`, height: 6, borderRadius: 3, backgroundColor: statusColor }} />
                   </View>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
@@ -296,7 +298,7 @@ export default function FastingScreen() {
                     color={statusColor}
                     style={{ marginTop: 1 }}
                   />
-                  <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 14, flex: 1, lineHeight: 20 }}>{rule}</Text>
+                  <Text style={{ color: C.textPrimary, fontFamily: fonts.serif, fontSize: 14, flex: 1, lineHeight: 20 }}>{rule}</Text>
                 </View>
               ))}
             </View>
@@ -322,10 +324,10 @@ export default function FastingScreen() {
             <MaterialCommunityIcons name="star-four-points" size={22} color={C.sacredGold} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 15 }}>
+            <Text style={{ color: C.sacredGold, fontFamily: fonts.serifBold, fontWeight: "700", fontSize: 15 }}>
               Pascha {year}
             </Text>
-            <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 13 }}>
+            <Text style={{ color: C.textSecondary, fontFamily: fonts.serif, fontSize: 13 }}>
               {pascha.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
             </Text>
           </View>
@@ -364,17 +366,17 @@ export default function FastingScreen() {
                   padding: spacing.m,
                   borderRadius: radii.m,
                   borderWidth: 1,
-                  borderColor: isToday ? "#8B0E1A" : C.hairline,
-                  backgroundColor: isToday ? "rgba(139,14,26,0.15)" : C.surfaceElevated,
+                  borderColor: isToday ? C.byzantineCrimson : C.hairline,
+                  backgroundColor: isToday ? C.overlayCrimson15 : C.surfaceElevated,
                 }}
               >
                 <MaterialCommunityIcons name="cross" size={16} color={isToday ? C.sacredGold : C.textMuted} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: isToday ? C.sacredGold : C.textPrimary, fontFamily: "serif", fontSize: 14 }}>{f.name}</Text>
+                  <Text style={{ color: isToday ? C.sacredGold : C.textPrimary, fontFamily: fonts.serif, fontSize: 14 }}>{f.name}</Text>
                   <Text style={{ color: C.textMuted, fontSize: 11, marginTop: 2 }}>{formatShortDate(d)}</Text>
                 </View>
                 {isToday && (
-                  <View style={{ backgroundColor: "#8B0E1A", borderRadius: radii.pill, paddingHorizontal: 7, paddingVertical: 2 }}>
+                  <View style={{ backgroundColor: C.byzantineCrimson, borderRadius: radii.pill, paddingHorizontal: 7, paddingVertical: 2 }}>
                     <Text style={{ color: C.ivoryVellum, fontSize: 9, fontWeight: "700" }}>TODAY</Text>
                   </View>
                 )}
@@ -419,7 +421,7 @@ export default function FastingScreen() {
           }}
         >
           <MaterialCommunityIcons name="information-outline" size={18} color={C.textMuted} style={{ marginTop: 2 }} />
-          <Text style={{ color: C.textMuted, fontFamily: "serif", fontSize: 13, lineHeight: 20, flex: 1 }}>
+          <Text style={{ color: C.textMuted, fontFamily: fonts.serif, fontSize: 13, lineHeight: 20, flex: 1 }}>
             Wednesday and Friday are fasting days throughout the year, except during fast-free weeks (Bright Week, Cheese Week, Pentecost Week, Christmas Week).
           </Text>
         </View>
