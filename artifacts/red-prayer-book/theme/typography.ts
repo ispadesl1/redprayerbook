@@ -19,9 +19,9 @@ export const fonts = {
 };
 
 export const type = {
-  h1: { fontFamily: fonts.medium, fontSize: 34, lineHeight: 40, fontWeight: "500" as const },
-  h2: { fontFamily: fonts.medium, fontSize: 26, lineHeight: 32, fontWeight: "500" as const },
-  h3: { fontFamily: fonts.medium, fontSize: 21, lineHeight: 28, fontWeight: "500" as const },
+  h1: { fontFamily: fonts.medium, fontSize: 34, lineHeight: 40 },
+  h2: { fontFamily: fonts.medium, fontSize: 26, lineHeight: 32 },
+  h3: { fontFamily: fonts.medium, fontSize: 21, lineHeight: 28 },
   body: { fontFamily: fonts.regular, fontSize: 18, lineHeight: 28 },
   serifBody: { fontFamily: fonts.regular, fontSize: 20.5, lineHeight: 33 },
   caption: { fontFamily: fonts.italic, fontSize: 16, lineHeight: 22 },

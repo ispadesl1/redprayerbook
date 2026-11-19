@@ -55,24 +55,31 @@ export function DayEntry({ date, style, day, loading, failed, textFailed, onRetr
         {day ? (
           <View style={{ marginTop: 14, gap: 8 }}>
             {fast?.title ? <Line label="Fast" value={fast.title} /> : null}
+            {fast?.detail && !fast.detail.startsWith("Abstain from") ? (
+              <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 24, color: C.ink2 }}>{fast.detail}</Text>
+            ) : null}
             {day.abstentions.length > 0 ? <Line label="Abstain" value={day.abstentions.join(", ")} /> : null}
             {day.tone != null ? <Line label="Tone" value={String(day.tone)} /> : null}
-            {day.readings.length === 0 ? (
-              <Text style={{ fontFamily: fonts.italic, color: C.ink2, fontSize: 16 }}>No readings were listed.</Text>
-            ) : (
-              day.readings.map((reading) => (
-                <View key={`${reading.source}-${reading.display}`} style={{ marginTop: 8 }}>
-                  <SmallCaps size={15}>
-                    {reading.source} · {reading.display}
-                  </SmallCaps>
-                  {reading.verses.length > 0 ? (
-                    <Text style={{ fontFamily: fonts.regular, fontSize: 17, lineHeight: 26, color: C.ink, marginTop: 4 }}>
-                      {reading.verses.map((verse) => verse.content).join(" ")}
-                    </Text>
-                  ) : null}
-                </View>
-              ))
-            )}
+            <View style={{ minHeight: 240 }}>
+              {day.readings.length === 0 ? (
+                <Text style={{ fontFamily: fonts.italic, color: C.ink2, fontSize: 16 }}>No readings were listed.</Text>
+              ) : (
+                day.readings.map((reading) => (
+                  <View key={`${reading.source}-${reading.display}`} style={{ marginTop: 8 }}>
+                    <SmallCaps size={15}>
+                      {reading.source} · {reading.display}
+                    </SmallCaps>
+                    {reading.verses.length > 0 ? (
+                      <Text style={{ fontFamily: fonts.regular, fontSize: 17, lineHeight: 26, color: C.ink, marginTop: 4 }}>
+                        {reading.verses.map((verse) => verse.content).join(" ")}
+                      </Text>
+                    ) : (
+                      <View style={{ minHeight: 26 }} />
+                    )}
+                  </View>
+                ))
+              )}
+            </View>
             {textFailed ? (
               <Text style={{ fontFamily: fonts.italic, color: C.ink2, fontSize: 16, marginTop: 8 }}>
                 The reading text could not be loaded.

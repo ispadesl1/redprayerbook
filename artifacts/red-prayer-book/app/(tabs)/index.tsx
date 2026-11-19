@@ -17,7 +17,7 @@ import { useLiturgicalDay } from "@/hooks/useCalendarData";
 import { usePalette } from "@/hooks/usePalette";
 import { useToday } from "@/hooks/useToday";
 import { BADGE_DEFS, getAllBadgeProgress, incrementBadge } from "@/lib/badges";
-import { fastLines, formatCivilDate, saintOfTheDay, type LiturgicalDay } from "@/lib/calendar";
+import { fastLines, formatCivilDate, saintOfTheDay, seasonOfTheDay, type LiturgicalDay } from "@/lib/calendar";
 import { CANONICAL_HOURS, getCurrentHour, type CanonicalHour } from "@/lib/canonicalHours";
 import { recordStreakToday } from "@/lib/db";
 import { getPrayerBySlug } from "@/lib/prayers";
@@ -157,11 +157,13 @@ function HourAndFast({
 
 function SaintPlate({
   name,
+  season,
   loading,
   failed,
   onRetry,
 }: {
   name: string;
+  season?: string;
   loading: boolean;
   failed: boolean;
   onRetry: () => void;
@@ -169,7 +171,7 @@ function SaintPlate({
   const C = usePalette();
   const showIcon = isWonderworker(name);
   return (
-    <View style={{ width: 132, minHeight: 140 }}>
+    <View style={{ width: 156, minHeight: 140 }}>
       <SmallCaps size={14}>Saint of the day</SmallCaps>
       {showIcon ? (
         <View style={{ marginTop: 8 }}>
@@ -179,16 +181,22 @@ function SaintPlate({
             resizeMode="cover"
             accessibilityLabel="Icon of St Nicholas the Wonderworker"
           />
-          <Text style={{ fontFamily: fonts.medium, fontSize: 16, lineHeight: 20, color: C.ink, marginTop: 6 }} numberOfLines={3}>
+          <Text style={{ fontFamily: fonts.medium, fontSize: 16, lineHeight: 21, color: C.ink, marginTop: 6 }}>
             {name}
           </Text>
+          {season ? (
+            <Text style={{ fontFamily: fonts.italic, fontSize: 15, lineHeight: 20, color: C.ink2, marginTop: 6 }}>{season}</Text>
+          ) : null}
         </View>
       ) : (
         <View style={{ marginTop: 8, minHeight: 96 }}>
           <Text style={{ fontFamily: fonts.regular, fontSize: 18, lineHeight: 22, color: C.rubric }}>✠</Text>
-          <Text style={{ fontFamily: fonts.medium, fontSize: 20, lineHeight: 26, color: C.ink, marginTop: 4 }} numberOfLines={4}>
+          <Text style={{ fontFamily: fonts.medium, fontSize: 20, lineHeight: 26, color: C.ink, marginTop: 4 }}>
             {name || (failed ? "Commemorations unavailable" : " ")}
           </Text>
+          {season ? (
+            <Text style={{ fontFamily: fonts.italic, fontSize: 15, lineHeight: 20, color: C.ink2, marginTop: 6 }}>{season}</Text>
+          ) : null}
           {failed && !name ? (
             <Pressable onPress={onRetry} style={{ minHeight: 44, justifyContent: "center" }}>
               <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 16 }}>Try again</Text>
@@ -232,6 +240,7 @@ export default function Home() {
     />
   );
   const saintName = dayQuery.data ? saintOfTheDay(dayQuery.data) : "";
+  const seasonName = dayQuery.data ? seasonOfTheDay(dayQuery.data) : "";
 
   return (
     <ManuscriptScroll inTabs margin={showMargin ? aside : undefined}>
@@ -251,6 +260,7 @@ export default function Home() {
         </View>
         <SaintPlate
           name={saintName}
+          season={seasonName}
           loading={dayQuery.isLoading && !dayQuery.data}
           failed={dayQuery.isError && !dayQuery.data}
           onRetry={() => dayQuery.refetch()}

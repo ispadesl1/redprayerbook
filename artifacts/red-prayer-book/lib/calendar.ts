@@ -38,7 +38,7 @@ export type LiturgicalDay = {
   stories: SaintStory[];
 };
 
-export type FastMark = "strict" | "wine" | "fish";
+export type FastMark = "strict" | "wine" | "fish" | "dairy";
 
 type RawReading = {
   source?: string;
@@ -143,6 +143,7 @@ export function fastMark(
   const exception = day.fastExceptionDesc.trim().toLowerCase();
   const set = new Set(day.abstentions);
   if ((level === "no fast" || day.fastLevel <= 0) && set.size === 0) return null;
+  if (exception.includes("meat fast")) return "dairy";
   if (exception.includes("fish")) return "fish";
   if (exception.includes("wine") || exception.includes("oil") || exception.includes("caviar")) return "wine";
   if (set.has("wine") && set.has("oil")) return "strict";
@@ -166,8 +167,28 @@ export function dayHeading(day: LiturgicalDay): string {
   return "";
 }
 
+const SEASON_LABEL = /forefeast|afterfeast|leavetaking|leave-taking|apodosis|midfeast|prefeast|^begin\b|nativity fast|lenten fast|apostles fast|dormition fast/i;
+
+export function isSeasonLabel(name: string): boolean {
+  return SEASON_LABEL.test(name);
+}
+
 export function saintOfTheDay(day: LiturgicalDay): string {
-  return dayTitle(day);
+  const personFeast = day.feasts.find((name) => !isSeasonLabel(name));
+  if (personFeast && /Nicholas.*(Myra|Wonderworker)|Wonderworker.*Nicholas/i.test(personFeast)) {
+    return personFeast;
+  }
+  const saint = day.saints.find((name) => !isSeasonLabel(name));
+  if (saint) return saint;
+  if (personFeast) return personFeast;
+  return "";
+}
+
+export function seasonOfTheDay(day: LiturgicalDay): string {
+  const saint = saintOfTheDay(day);
+  const feasts = day.feasts.filter((name) => name && name !== saint);
+  const seasons = day.saints.filter((name) => isSeasonLabel(name) && name !== saint);
+  return [...new Set([...feasts, ...seasons])].join(" · ");
 }
 
 function calendarPath(style: CalendarStyle): "gregorian" | "julian" {
@@ -219,9 +240,19 @@ export function fastLines(day: LiturgicalDay): { title: string; detail: string }
     if (unique.some((item) => item.toLowerCase() === text.toLowerCase())) continue;
     unique.push(text);
   }
+  const lower = unique.map((item) => item.toLowerCase());
+  const title =
+    lower.includes("no fast") && lower.includes("fast free")
+      ? "Fast free"
+      : unique.join(" · ");
+  const dairy = fastMark(day) === "dairy";
   return {
-    title: unique.join(" · "),
-    detail: day.abstentions.length > 0 ? `Abstain from ${day.abstentions.join(", ")}` : "",
+    title,
+    detail: dairy
+      ? "Dairy is allowed."
+      : day.abstentions.length > 0
+        ? `Abstain from ${day.abstentions.join(", ")}`
+        : "",
   };
 }
 

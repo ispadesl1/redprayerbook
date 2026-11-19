@@ -49,7 +49,7 @@ export function MonthGrid({ year, month, days, selected, onSelect }: Props) {
           const info = days?.find((item) => item.civilDay === day);
           const mark = info ? fastMark(info) : null;
           const feast = info?.greatFeast ?? false;
-          const fastName = info ? fastLines(info).title : "";
+          const fastName = info ? (mark === "dairy" ? "Dairy allowed" : fastLines(info).title) : "";
           const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
           const isSelected = day === selected;
           const sunday = new Date(year, month, day).getDay() === 0;
@@ -92,6 +92,9 @@ export function MonthGrid({ year, month, days, selected, onSelect }: Props) {
                 ) : null}
                 {mark === "fish" ? (
                   <View style={{ width: 5, height: 5, borderRadius: 3, borderWidth: 1, borderColor: isSelected ? C.onRubric : C.rubric }} />
+                ) : null}
+                {mark === "dairy" ? (
+                  <View style={{ width: 5, height: 5, borderWidth: 1, borderColor: isSelected ? C.onRubric : C.ink2 }} />
                 ) : null}
               </View>
             </Pressable>

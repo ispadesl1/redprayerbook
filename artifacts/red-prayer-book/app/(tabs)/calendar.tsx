@@ -38,7 +38,7 @@ export default function Calendar() {
   const fastFailed = (dayQuery.isError || monthQuery.isError) && !day;
 
   const margin = (
-    <View style={{ minHeight: 96 }}>
+    <View style={{ minHeight: showMargin ? 220 : 96 }}>
       <SmallCaps>This day</SmallCaps>
       {day ? (
         <Text style={{ fontFamily: fonts.regular, fontSize: 18, lineHeight: 26, color: C.ink, marginTop: 8 }}>
@@ -115,6 +115,7 @@ export default function Calendar() {
         <Legend swatch="strict" label="Strict fast" />
         <Legend swatch="wine" label="Wine and oil" />
         <Legend swatch="fish" label="Fish, wine and oil" />
+        <Legend swatch="dairy" label="Dairy allowed" />
         <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 15, lineHeight: 20 }}>✠ Great feast</Text>
       </View>
       {monthQuery.isError && !monthQuery.data ? (
@@ -122,6 +123,9 @@ export default function Calendar() {
           The month’s commemorations could not be loaded.
         </Text>
       ) : null}
+      <Text style={{ fontFamily: fonts.italic, fontSize: 15, lineHeight: 22, color: C.ink2, marginTop: 22, minHeight: 44 }}>
+        {CALENDAR_CREDIT}
+      </Text>
       <DayEntry
         date={selectedDate}
         style={style}
@@ -134,14 +138,11 @@ export default function Calendar() {
           monthQuery.refetch();
         }}
       />
-      <Text style={{ fontFamily: fonts.italic, fontSize: 15, lineHeight: 22, color: C.ink2, marginTop: 28 }}>
-        {CALENDAR_CREDIT}
-      </Text>
     </ManuscriptScroll>
   );
 }
 
-function Legend({ swatch, label }: { swatch: "strict" | "wine" | "fish"; label: string }) {
+function Legend({ swatch, label }: { swatch: "strict" | "wine" | "fish" | "dairy"; label: string }) {
   const C = usePalette();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -149,10 +150,10 @@ function Legend({ swatch, label }: { swatch: "strict" | "wine" | "fish"; label: 
         style={{
           width: 7,
           height: 7,
-          borderRadius: 4,
+          borderRadius: swatch === "dairy" ? 0 : 4,
           backgroundColor: swatch === "strict" ? C.rubric : "transparent",
           borderWidth: swatch === "strict" ? 0 : 1,
-          borderColor: swatch === "wine" ? C.ink2 : C.rubric,
+          borderColor: swatch === "wine" || swatch === "dairy" ? C.ink2 : C.rubric,
         }}
       />
       <Text style={{ color: C.ink2, fontFamily: fonts.regular, fontSize: 15 }}>{label}</Text>

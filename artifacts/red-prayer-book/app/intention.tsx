@@ -16,7 +16,7 @@ import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { usePalette } from "@/hooks/usePalette";
 import { fonts } from "@/theme/typography";
-import { spacing, radii } from "@/theme/spacing";
+import { spacing } from "@/theme/spacing";
 import { savePrayerIntention } from "@/lib/db";
 
 const API_BASE = `${process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : ""}/api`;
@@ -39,6 +39,7 @@ export default function IntentionScreen() {
   const [prayerText, setPrayerText] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [inputFocused, setInputFocused] = useState(true);
   const scrollRef = useRef<ScrollView>(null);
 
   const composePrayer = useCallback(async (text: string) => {
@@ -167,14 +168,7 @@ export default function IntentionScreen() {
             </View>
 
             {/* Text input */}
-            <View
-              style={{
-                borderBottomWidth: 1,
-                borderBottomColor: C.ink2,
-                marginBottom: spacing.m,
-                paddingVertical: 4,
-              }}
-            >
+            <View style={{ marginBottom: spacing.m, paddingVertical: 4 }}>
               <TextInput
                 style={{
                   color: C.ink,
@@ -183,11 +177,16 @@ export default function IntentionScreen() {
                   lineHeight: 28,
                   minHeight: 88,
                   textAlignVertical: "top",
+                  borderBottomWidth: inputFocused ? 2 : 1,
+                  borderBottomColor: inputFocused ? C.rubric : C.ink2,
+                  ...(Platform.OS === "web" ? ({ outline: "none" } as object) : null),
                 }}
                 placeholder="e.g. for healing of my father's illness..."
                 placeholderTextColor={C.textMuted}
                 value={intention}
                 onChangeText={setIntention}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
                 multiline
                 autoFocus
               />
@@ -198,24 +197,19 @@ export default function IntentionScreen() {
               onPress={() => composePrayer(intention)}
               disabled={!intention.trim()}
               style={({ pressed }) => ({
-                backgroundColor:
-                  "transparent",
-                borderWidth: 1,
-                borderColor:
-                  !intention.trim() ? C.hairline : C.sacredGold,
-                borderRadius: radii.pill,
-                paddingVertical: spacing.m,
+                backgroundColor: !intention.trim() ? "transparent" : C.rubric,
+                minHeight: 48,
                 alignItems: "center",
+                justifyContent: "center",
                 marginBottom: spacing.l,
-                opacity: pressed ? 0.8 : 1,
+                opacity: pressed ? 0.85 : 1,
               })}
             >
               <Text
                 style={{
-                  color: !intention.trim() ? C.textMuted : C.sacredGold,
-                  fontFamily: fonts.regular,
-                  fontWeight: "700",
-                  fontSize: 16,
+                  color: !intention.trim() ? C.ink2 : C.onRubric,
+                  fontFamily: fonts.semibold,
+                  fontSize: 18,
                 }}
               >
                 Compose Prayer
@@ -264,7 +258,7 @@ export default function IntentionScreen() {
               <MaterialCommunityIcons name="cross" size={36} color={C.sacredGold} />
             </View>
             <ActivityIndicator color={C.sacredGold} size="large" style={{ marginBottom: spacing.m }} />
-            <Text style={{ color: C.sacredGold, fontFamily: fonts.regular, fontWeight: "700", fontSize: 18, textAlign: "center" }}>
+            <Text style={{ color: C.rubric, fontFamily: fonts.semibold, fontSize: 20, textAlign: "center" }}>
               Composing your prayer…
             </Text>
             <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 17, textAlign: "center", marginTop: spacing.s, lineHeight: 26 }}>
@@ -331,29 +325,18 @@ export default function IntentionScreen() {
                   onPress={handleSave}
                   disabled={saved}
                   style={({ pressed }) => ({
-                    flexDirection: "row",
+                    minHeight: 48,
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: spacing.s,
-                    paddingVertical: spacing.m,
-                    borderRadius: radii.pill,
-                    borderWidth: 1,
-                    borderColor: saved ? C.hairline : C.sacredGold,
-                    backgroundColor: "transparent",
-                    opacity: pressed ? 0.8 : 1,
+                    backgroundColor: saved ? "transparent" : C.rubric,
+                    opacity: pressed ? 0.85 : 1,
                   })}
                 >
-                  <MaterialCommunityIcons
-                    name={saved ? "check" : "bookmark-outline"}
-                    size={18}
-                    color={saved ? C.textMuted : C.sacredGold}
-                  />
                   <Text
                     style={{
-                      color: saved ? C.textMuted : C.sacredGold,
-                      fontFamily: fonts.regular,
-                      fontWeight: "700",
-                      fontSize: 15,
+                      color: saved ? C.ink2 : C.onRubric,
+                      fontFamily: fonts.semibold,
+                      fontSize: 18,
                     }}
                   >
                     {saved ? "Saved to Bookmarks" : "Save to Bookmarks"}
@@ -363,20 +346,13 @@ export default function IntentionScreen() {
                 <Pressable
                   onPress={handleShare}
                   style={({ pressed }) => ({
-                    flexDirection: "row",
+                    minHeight: 44,
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: spacing.s,
-                    paddingVertical: spacing.m,
-                    borderRadius: radii.pill,
-                    borderWidth: 1,
-                    borderColor: C.hairline,
-                    backgroundColor: C.surfaceElevated,
                     opacity: pressed ? 0.7 : 1,
                   })}
                 >
-                  <MaterialCommunityIcons name="share-outline" size={18} color={C.textSecondary} />
-                  <Text style={{ color: C.textSecondary, fontFamily: fonts.regular, fontWeight: "600", fontSize: 15 }}>
+                  <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>
                     Share Prayer
                   </Text>
                 </Pressable>

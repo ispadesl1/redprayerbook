@@ -15,7 +15,7 @@ import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { usePalette } from "@/hooks/usePalette";
 import { fonts } from "@/theme/typography";
-import { spacing, radii } from "@/theme/spacing";
+import { spacing } from "@/theme/spacing";
 
 const API_BASE = `${process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : ""}/api`;
 
@@ -309,6 +309,7 @@ export default function CompanionScreen() {
               paddingHorizontal: 4,
               paddingVertical: 8,
               maxHeight: 120,
+              ...(Platform.OS === "web" ? ({ outline: "none" } as object) : null),
             }}
             placeholder="Ask Father Seraphim…"
             placeholderTextColor={C.textMuted}
@@ -322,27 +323,21 @@ export default function CompanionScreen() {
             onPress={() => sendMessage(input)}
             disabled={!input.trim() || loading}
             style={({ pressed }) => ({
-              width: 44,
-              height: 44,
-              borderRadius: 0,
-              backgroundColor:
-                "transparent",
+              minWidth: 44,
+              minHeight: 44,
+              paddingHorizontal: 12,
               alignItems: "center",
               justifyContent: "center",
-              borderWidth: 1,
-              borderColor:
-                !input.trim() || loading ? C.hairline : C.sacredGold,
-              opacity: pressed ? 0.75 : 1,
+              backgroundColor: !input.trim() || loading ? "transparent" : C.rubric,
+              opacity: pressed ? 0.85 : 1,
             })}
           >
             {loading ? (
-              <ActivityIndicator size="small" color={C.sacredGold} />
+              <ActivityIndicator size="small" color={C.rubric} />
             ) : (
-              <MaterialCommunityIcons
-                name="send"
-                size={20}
-                color={!input.trim() ? C.textMuted : C.sacredGold}
-              />
+              <Text style={{ color: !input.trim() ? C.ink2 : C.onRubric, fontFamily: fonts.semibold, fontSize: 16 }}>
+                Send
+              </Text>
             )}
           </Pressable>
         </View>

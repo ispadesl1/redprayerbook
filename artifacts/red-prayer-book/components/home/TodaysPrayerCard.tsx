@@ -2,6 +2,7 @@ import { Pressable, View, Text, Image } from 'react-native';
 import { FiligreeFrame } from '@/components/ui/FiligreeFrame';
 import { colors } from '@/theme/colors';
 import { spacing } from '@/theme/spacing';
+import { fonts } from '@/theme/typography';
 
 export function TodaysPrayerCard({
   quote,
@@ -38,10 +39,9 @@ export function TodaysPrayerCard({
             <Text
               style={{
                 fontSize: 22,
-                fontWeight: '700',
                 color: colors.sacredGold,
                 marginBottom: 6,
-                fontFamily: 'serif',
+                fontFamily: fonts.bold,
               }}
             >
               Today's Prayer
