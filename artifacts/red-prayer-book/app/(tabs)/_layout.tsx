@@ -1,111 +1,145 @@
-import { Tabs } from "expo-router";
-import { Platform, StyleSheet, View } from "react-native";
-import { BlurView } from "expo-blur";
+import { Tabs, usePathname, router } from "expo-router";
+import { Pressable, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors as C } from "@/theme/colors";
+import { usePalette } from "@/hooks/usePalette";
+import { useFrame } from "@/components/ui/manuscript";
+import { fonts } from "@/theme/typography";
+import { layout } from "@/theme/spacing";
+import { formatCivilDate } from "@/lib/calendar";
+import { getCurrentHour } from "@/lib/canonicalHours";
 
 type MCI = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
 
-function TabIcon({ name, focused }: { name: MCI; focused: boolean }) {
+const TABS: { name: string; href: string; label: string; icon: MCI }[] = [
+  { name: "index", href: "/", label: "Home", icon: "home-outline" },
+  { name: "prayers", href: "/prayers", label: "Prayers", icon: "cross" },
+  { name: "calendar", href: "/calendar", label: "Calendar", icon: "calendar-month-outline" },
+  { name: "bible", href: "/bible", label: "Bible", icon: "book-open-outline" },
+  { name: "you", href: "/you", label: "You", icon: "account-outline" },
+];
+
+function isActive(path: string, href: string) {
+  if (href === "/") return path === "/" || path === "/index";
+  return path === href || path.startsWith(`${href}/`);
+}
+
+function ContentsRail() {
+  const C = usePalette();
+  const path = usePathname();
+  const hour = getCurrentHour();
   return (
-    <View style={{ alignItems: "center", justifyContent: "center", width: 28, height: 28 }}>
-      <MaterialCommunityIcons
-        name={name}
-        size={24}
-        color={focused ? C.sacredGold : C.textSecondary}
-      />
+    <View
+      style={{
+        width: layout.side,
+        backgroundColor: C.paper2,
+        borderRightWidth: 1,
+        borderRightColor: C.rule,
+        paddingHorizontal: 28,
+        paddingTop: 40,
+        paddingBottom: 28,
+      }}
+    >
+      <Text
+        style={{
+          fontFamily: fonts.medium,
+          fontSize: 26,
+          lineHeight: 30,
+          color: C.rubric,
+          fontVariant: ["small-caps"],
+          letterSpacing: 0.4,
+        }}
+      >
+        The Red Prayer Book
+      </Text>
+      <Text style={{ fontFamily: fonts.italic, fontSize: 15, color: C.ink2, marginTop: 6, marginBottom: 32 }}>
+        A pocket prayer book for Orthodox Christians
+      </Text>
+      {TABS.map((tab) => {
+        const active = isActive(path, tab.href);
+        return (
+          <Pressable
+            key={tab.name}
+            onPress={() => router.push(tab.href as never)}
+            style={({ pressed }) => ({
+              flexDirection: "row",
+              alignItems: "center",
+              paddingVertical: 9,
+              backgroundColor: pressed ? C.highlight : "transparent",
+            })}
+          >
+            <Text style={{ flex: 1, fontFamily: fonts.regular, fontSize: 19, color: active ? C.rubric : C.ink }}>
+              {tab.label}
+            </Text>
+            {active ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.rubric }} /> : null}
+          </Pressable>
+        );
+      })}
+      <View style={{ flex: 1 }} />
+      <Text style={{ fontFamily: fonts.italic, fontSize: 15, lineHeight: 22, color: C.ink2 }}>
+        {formatCivilDate(new Date())}
+        {"\n"}
+        {hour.name}
+      </Text>
     </View>
   );
 }
 
 export default function TabLayout() {
+  const C = usePalette();
   const insets = useSafeAreaInsets();
-  const isIOS = Platform.OS === "ios";
-  const isWeb = Platform.OS === "web";
+  const { wide } = useFrame();
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: true,
-        tabBarActiveTintColor: C.sacredGold,
-        tabBarInactiveTintColor: C.textSecondary,
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: "600",
-          letterSpacing: 0.8,
-          textTransform: "uppercase",
-          marginTop: 2,
-        },
-        tabBarStyle: {
-          position: "absolute",
-          backgroundColor: isIOS ? "transparent" : C.surfaceDeep,
-          borderTopColor: C.hairline,
-          borderTopWidth: 1,
-          height: isWeb ? 84 : 54 + insets.bottom,
-          paddingBottom: isWeb ? 24 : insets.bottom,
-          paddingTop: 6,
-          elevation: 0,
-        },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={90}
-              tint="dark"
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: "rgba(14,14,16,0.75)" },
-              ]}
+    <View style={{ flex: 1, flexDirection: wide ? "row" : "column", backgroundColor: C.paper }}>
+      {wide ? <ContentsRail /> : null}
+      <View style={{ flex: 1 }}>
+        <Tabs
+          screenOptions={{
+            headerShown: false,
+            tabBarActiveTintColor: C.rubric,
+            tabBarInactiveTintColor: C.ink2,
+            tabBarLabelStyle: {
+              fontFamily: fonts.medium,
+              fontSize: 13,
+              letterSpacing: 0.4,
+              fontVariant: ["small-caps"],
+              textTransform: "none",
+              marginTop: 1,
+            },
+            tabBarStyle: wide
+              ? { display: "none", height: 0 }
+              : {
+                  position: "absolute",
+                  backgroundColor: C.paper,
+                  borderTopColor: C.rule,
+                  borderTopWidth: 1,
+                  height: 58 + insets.bottom,
+                  paddingBottom: insets.bottom,
+                  paddingTop: 6,
+                  elevation: 0,
+                  shadowOpacity: 0,
+                },
+            tabBarItemStyle: {
+              borderTopWidth: 0,
+            },
+            sceneStyle: { backgroundColor: C.paper },
+          }}
+        >
+          {TABS.map((tab) => (
+            <Tabs.Screen
+              key={tab.name}
+              name={tab.name}
+              options={{
+                title: tab.label,
+                tabBarIcon: ({ focused }) => (
+                  <MaterialCommunityIcons name={tab.icon} size={20} color={focused ? C.rubric : C.ink2} />
+                ),
+              }}
             />
-          ) : null,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name={focused ? "home" : "home-outline"} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="prayers"
-        options={{
-          title: "Prayers",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name="cross" focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="calendar"
-        options={{
-          title: "Calendar",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name={focused ? "calendar-month" : "calendar-month-outline"} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="bible"
-        options={{
-          title: "Bible",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name={focused ? "book-open-variant" : "book-open-outline"} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="you"
-        options={{
-          title: "You",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name={focused ? "account-circle" : "account-circle-outline"} focused={focused} />
-          ),
-        }}
-      />
-    </Tabs>
+          ))}
+        </Tabs>
+      </View>
+    </View>
   );
 }

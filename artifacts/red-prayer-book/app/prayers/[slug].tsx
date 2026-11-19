@@ -1,538 +1,201 @@
-import { useEffect, useState, useCallback } from 'react';
-import { ScrollView, View, Text, Pressable, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, router } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
-import { spacing, radii } from '@/theme/spacing';
+import { useCallback, useEffect, useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { IconPress, Ornament, ReadingText, SmallCaps, TocRow, useFrame } from "@/components/ui/manuscript";
+import { usePalette } from "@/hooks/usePalette";
 import {
-  getPrayerBySlug,
-  Prayer,
-  PRAYER_SECTIONS,
-} from '@/lib/prayers';
-import {
-  isPrayerBookmarked,
   addPrayerBookmark,
-  removePrayerBookmark,
+  isPrayerBookmarked,
   recordPrayerRead,
-} from '@/lib/db';
-
-function BackButton() {
-  return (
-    <Pressable
-      onPress={() => router.back()}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: spacing.xs,
-        paddingHorizontal: spacing.s,
-        borderRadius: radii.pill,
-        backgroundColor: pressed ? 'rgba(212,175,55,0.1)' : 'transparent',
-      })}
-    >
-      <Text style={{ color: colors.sacredGold, fontSize: 20, marginRight: 4 }}>‹</Text>
-      <Text style={{ color: colors.sacredGold, fontSize: 13, fontFamily: 'serif' }}>
-        Prayer Book
-      </Text>
-    </Pressable>
-  );
-}
-
-function GoldRule() {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: spacing.m,
-      }}
-    >
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.hairline }} />
-      <Text style={{ color: colors.sacredGold, fontSize: 12, marginHorizontal: spacing.s }}>
-        ✦
-      </Text>
-      <View style={{ flex: 1, height: 1, backgroundColor: colors.hairline }} />
-    </View>
-  );
-}
-
-function Rubric({ text }: { text: string }) {
-  return (
-    <View
-      style={{
-        backgroundColor: 'rgba(139,14,26,0.18)',
-        borderLeftWidth: 2,
-        borderLeftColor: colors.byzantineCrimson,
-        borderRadius: radii.s,
-        paddingHorizontal: spacing.s,
-        paddingVertical: spacing.xs,
-        marginBottom: spacing.m,
-      }}
-    >
-      <Text
-        style={{
-          fontFamily: 'serif',
-          fontStyle: 'italic',
-          fontSize: 13,
-          color: colors.textSecondary,
-          lineHeight: 20,
-        }}
-      >
-        {text}
-      </Text>
-    </View>
-  );
-}
-
-function PrayerText({ text }: { text: string }) {
-  const paragraphs = text.split('\n\n');
-  return (
-    <>
-      {paragraphs.map((para, idx) => {
-        const isHeading =
-          /^[A-Z]{4,}/.test(para.trim()) && para.length < 60;
-        const isDialogLine =
-          /^(PRIEST|CHOIR|PEOPLE|READER|And the Priest|The Priest|Then|Meanwhile)/.test(
-            para.trim(),
-          );
-        const isItalicStage =
-          para.trim().startsWith('(') && para.trim().endsWith(')');
-
-        if (isHeading) {
-          return (
-            <Text
-              key={idx}
-              style={{
-                fontFamily: 'serif',
-                fontWeight: '700',
-                fontSize: 14,
-                color: colors.sacredGold,
-                textAlign: 'center',
-                letterSpacing: 0.8,
-                marginTop: idx > 0 ? spacing.m : 0,
-                marginBottom: spacing.xs,
-              }}
-            >
-              {para.trim()}
-            </Text>
-          );
-        }
-
-        if (isItalicStage) {
-          return (
-            <Text
-              key={idx}
-              style={{
-                fontFamily: 'serif',
-                fontStyle: 'italic',
-                fontSize: 13,
-                color: colors.textMuted,
-                lineHeight: 20,
-                textAlign: 'center',
-                marginBottom: spacing.s,
-              }}
-            >
-              {para.trim()}
-            </Text>
-          );
-        }
-
-        if (isDialogLine) {
-          const lines = para.split('\n');
-          return (
-            <View key={idx} style={{ marginBottom: spacing.s }}>
-              {lines.map((line, li) => (
-                <Text
-                  key={li}
-                  style={{
-                    fontFamily: 'serif',
-                    fontSize: 15,
-                    color: /^(PRIEST|CHOIR|PEOPLE|READER)/.test(line.trim())
-                      ? colors.martyrRed
-                      : colors.textPrimary,
-                    lineHeight: 24,
-                    fontWeight: /^(PRIEST|CHOIR|PEOPLE|READER)/.test(
-                      line.trim(),
-                    )
-                      ? '700'
-                      : '400',
-                  }}
-                >
-                  {line}
-                </Text>
-              ))}
-            </View>
-          );
-        }
-
-        return (
-          <Text
-            key={idx}
-            style={{
-              fontFamily: 'serif',
-              fontSize: 16,
-              color: colors.textPrimary,
-              lineHeight: 28,
-              textAlign: 'justify',
-              marginBottom: idx < paragraphs.length - 1 ? spacing.m : 0,
-            }}
-          >
-            {para.trim()}
-          </Text>
-        );
-      })}
-    </>
-  );
-}
-
-function ListContent({ items }: { items: string[] }) {
-  return (
-    <>
-      {items.map((item, idx) => (
-        <View
-          key={idx}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            marginBottom: spacing.s,
-          }}
-        >
-          <View
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: 13,
-              backgroundColor: 'rgba(212,175,55,0.15)',
-              borderWidth: 1,
-              borderColor: colors.hairline,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: spacing.s,
-              marginTop: 1,
-              flexShrink: 0,
-            }}
-          >
-            <Text
-              style={{
-                color: colors.sacredGold,
-                fontSize: 11,
-                fontWeight: '700',
-              }}
-            >
-              {idx + 1}
-            </Text>
-          </View>
-          <Text
-            style={{
-              fontFamily: 'serif',
-              fontSize: 16,
-              color: colors.textPrimary,
-              lineHeight: 26,
-              flex: 1,
-            }}
-          >
-            {item}
-          </Text>
-        </View>
-      ))}
-    </>
-  );
-}
-
-function SectionNavPills({ currentSlug }: { currentSlug: string }) {
-  const section = PRAYER_SECTIONS.find((s) =>
-    s.prayers.some((p) => p.slug === currentSlug),
-  );
-  if (!section || section.prayers.length <= 1) return null;
-
-  const currentIdx = section.prayers.findIndex((p) => p.slug === currentSlug);
-
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: spacing.xl,
-        paddingTop: spacing.m,
-        borderTopWidth: 1,
-        borderTopColor: colors.hairline,
-      }}
-    >
-      {currentIdx > 0 ? (
-        <Pressable
-          onPress={() =>
-            router.replace(
-              `/prayers/${section.prayers[currentIdx - 1].slug}` as any,
-            )
-          }
-          style={({ pressed }) => ({
-            flex: 1,
-            marginRight: spacing.xs,
-            backgroundColor: pressed
-              ? 'rgba(212,175,55,0.12)'
-              : colors.surfaceElevated,
-            borderRadius: radii.m,
-            borderWidth: 1,
-            borderColor: colors.hairline,
-            padding: spacing.s,
-          })}
-        >
-          <Text style={{ color: colors.textMuted, fontSize: 11 }}>‹ Previous</Text>
-          <Text
-            style={{
-              color: colors.sacredGold,
-              fontSize: 13,
-              fontFamily: 'serif',
-              fontWeight: '600',
-              marginTop: 2,
-            }}
-            numberOfLines={1}
-          >
-            {section.prayers[currentIdx - 1].title}
-          </Text>
-        </Pressable>
-      ) : (
-        <View style={{ flex: 1, marginRight: spacing.xs }} />
-      )}
-
-      {currentIdx < section.prayers.length - 1 ? (
-        <Pressable
-          onPress={() =>
-            router.replace(
-              `/prayers/${section.prayers[currentIdx + 1].slug}` as any,
-            )
-          }
-          style={({ pressed }) => ({
-            flex: 1,
-            marginLeft: spacing.xs,
-            backgroundColor: pressed
-              ? 'rgba(212,175,55,0.12)'
-              : colors.surfaceElevated,
-            borderRadius: radii.m,
-            borderWidth: 1,
-            borderColor: colors.hairline,
-            padding: spacing.s,
-            alignItems: 'flex-end',
-          })}
-        >
-          <Text style={{ color: colors.textMuted, fontSize: 11 }}>Next ›</Text>
-          <Text
-            style={{
-              color: colors.sacredGold,
-              fontSize: 13,
-              fontFamily: 'serif',
-              fontWeight: '600',
-              marginTop: 2,
-            }}
-            numberOfLines={1}
-          >
-            {section.prayers[currentIdx + 1].title}
-          </Text>
-        </Pressable>
-      ) : (
-        <View style={{ flex: 1, marginLeft: spacing.xs }} />
-      )}
-    </View>
-  );
-}
+  removePrayerBookmark,
+} from "@/lib/db";
+import { getAllPrayers, getPrayerBySlug, PRAYER_SECTIONS, type Prayer } from "@/lib/prayers";
+import { usePrefs } from "@/lib/prefs";
+import { layout } from "@/theme/spacing";
+import { fonts } from "@/theme/typography";
 
 export default function PrayerDetail() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const prayer =
-    getPrayerBySlug(slug ?? '') ?? getPrayerBySlug('morning-trisagion')!;
-
-  const section = PRAYER_SECTIONS.find((s) =>
-    s.prayers.some((p) => p.slug === prayer.slug),
-  );
-
+  const prayer = getPrayerBySlug(slug ?? "") ?? getPrayerBySlug("morning-trisagion");
+  const C = usePalette();
+  const insets = useSafeAreaInsets();
+  const { showMargin } = useFrame();
+  const readStep = usePrefs((state) => state.readStep);
+  const setReadStep = usePrefs((state) => state.setReadStep);
   const [bookmarked, setBookmarked] = useState(false);
 
   useEffect(() => {
+    if (!prayer) return;
     isPrayerBookmarked(prayer.slug).then(setBookmarked);
     recordPrayerRead(prayer.slug);
-  }, [prayer.slug]);
+  }, [prayer]);
+
+  const section = PRAYER_SECTIONS.find((item) => item.prayers.some((entry) => entry.slug === prayer?.slug));
+  const all = getAllPrayers();
+  const index = all.findIndex((item) => item.slug === prayer?.slug);
+  const next = index >= 0 ? all[index + 1] : undefined;
 
   const toggleBookmark = useCallback(async () => {
+    if (!prayer) return;
     if (bookmarked) {
       await removePrayerBookmark(prayer.slug);
       setBookmarked(false);
     } else {
-      await addPrayerBookmark(
-        prayer.slug,
-        prayer.title,
-        section?.title ?? 'Prayer Book',
-      );
+      await addPrayerBookmark(prayer.slug, prayer.title, section?.title ?? "Prayer Book");
       setBookmarked(true);
     }
-  }, [bookmarked, prayer.slug, prayer.title, section?.title]);
+  }, [bookmarked, prayer, section?.title]);
+
+  if (!prayer) {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.paper, padding: 24 }}>
+        <Text style={{ fontFamily: fonts.italic, color: C.ink2 }}>That prayer is not in the book.</Text>
+      </View>
+    );
+  }
+
+  const size = 20.5 + readStep * 1.5;
+  const margin = section ? (
+    <View>
+      <SmallCaps>{section.title}</SmallCaps>
+      {section.prayers.map((item) => (
+        <TocRow
+          key={item.slug}
+          title={item.title}
+          page={item.bookPage ? String(item.bookPage) : "›"}
+          active={item.slug === prayer.slug}
+          onPress={() => router.replace(`/prayers/${item.slug}` as never)}
+        />
+      ))}
+    </View>
+  ) : null;
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      style={{ flex: 1, backgroundColor: colors.surfaceDeep }}
-    >
-      {/* Header */}
+    <View style={{ flex: 1, backgroundColor: C.paper }}>
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: spacing.s,
-          paddingVertical: spacing.xs,
+          paddingTop: insets.top + 4,
           borderBottomWidth: 1,
-          borderBottomColor: colors.hairline,
-          backgroundColor: colors.surface,
+          borderBottomColor: C.rule,
+          backgroundColor: C.paper,
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 8,
         }}
       >
-        <BackButton />
-
-        <View style={{ flex: 1 }} />
-
-        {section && (
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              paddingHorizontal: spacing.s,
-              paddingVertical: 4,
-              backgroundColor: section.color + '22',
-              borderRadius: radii.pill,
-              marginRight: spacing.xs,
-            }}
-          >
-            <Text style={{ fontSize: 12, marginRight: 4 }}>{section.icon}</Text>
-            <Text
-              style={{
-                color: section.color,
-                fontSize: 11,
-                fontWeight: '600',
-              }}
-              numberOfLines={1}
-            >
-              {section.title}
-            </Text>
-          </View>
-        )}
-
-        {/* Bookmark button */}
-        <Pressable
-          onPress={toggleBookmark}
-          style={({ pressed }) => ({
-            padding: spacing.xs,
-            borderRadius: radii.m,
-            backgroundColor: pressed
-              ? 'rgba(212,175,55,0.15)'
-              : bookmarked
-              ? 'rgba(212,175,55,0.12)'
-              : 'transparent',
-            borderWidth: bookmarked ? 1 : 0,
-            borderColor: colors.hairline,
-          })}
-          accessibilityLabel={bookmarked ? 'Remove bookmark' : 'Add bookmark'}
-        >
-          <MaterialCommunityIcons
-            name={bookmarked ? 'bookmark' : 'bookmark-outline'}
-            size={22}
-            color={bookmarked ? colors.sacredGold : colors.textMuted}
-          />
+        <Pressable onPress={() => router.back()} style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 8, flex: 1 }}>
+          <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }} numberOfLines={1}>
+            ‹ {section?.title ?? "Prayers"}
+          </Text>
         </Pressable>
+        <IconPress label="Smaller text" onPress={() => setReadStep(readStep - 1)}>
+          <Text style={{ fontFamily: fonts.regular, fontSize: 16, color: C.ink2 }}>A</Text>
+        </IconPress>
+        <IconPress label="Larger text" onPress={() => setReadStep(readStep + 1)}>
+          <Text style={{ fontFamily: fonts.regular, fontSize: 24, color: C.ink2 }}>A</Text>
+        </IconPress>
+        <IconPress label={bookmarked ? "Remove bookmark" : "Bookmark"} onPress={toggleBookmark} pressed={bookmarked}>
+          <Text style={{ fontFamily: fonts.medium, fontSize: 16, color: bookmarked ? C.rubric : C.ink2 }}>
+            {bookmarked ? "Saved" : "Save"}
+          </Text>
+        </IconPress>
       </View>
-
       <ScrollView
         contentContainerStyle={{
-          padding: spacing.m,
-          paddingBottom: spacing.xxxl,
+          paddingHorizontal: showMargin ? 40 : 22,
+          paddingTop: 28,
+          paddingBottom: insets.bottom + 48,
         }}
-        showsVerticalScrollIndicator={false}
       >
-        {/* Title card */}
         <View
           style={{
-            borderWidth: 1,
-            borderColor: colors.hairline,
-            borderRadius: radii.l,
-            backgroundColor: colors.surface,
-            padding: spacing.m,
-            marginBottom: spacing.m,
+            width: "100%",
+            maxWidth: showMargin && margin ? layout.column + 56 + layout.marginalia : layout.column,
+            alignSelf: "center",
+            flexDirection: showMargin && margin ? "row" : "column",
+            gap: showMargin && margin ? 56 : 0,
+            alignItems: "flex-start",
           }}
         >
-          <Text
-            style={{
-              fontFamily: 'serif',
-              fontWeight: '700',
-              fontSize: 22,
-              color: colors.sacredGold,
-              textAlign: 'center',
-              letterSpacing: 0.5,
-            }}
-          >
-            {prayer.title}
-          </Text>
-
-          {prayer.subtitle ? (
-            <Text
-              style={{
-                fontFamily: 'serif',
-                fontStyle: 'italic',
-                fontSize: 13,
-                color: colors.textMuted,
-                textAlign: 'center',
-                marginTop: spacing.xs,
-              }}
-            >
-              {prayer.subtitle}
-            </Text>
-          ) : null}
-
-          {prayer.bookPage ? (
-            <View style={{ alignItems: 'center', marginTop: spacing.s }}>
-              <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-                — p. {prayer.bookPage} —
+          <View style={{ width: "100%", maxWidth: layout.column }}>
+            <View style={{ alignItems: "center", paddingTop: 12 }}>
+              <Text style={{ fontFamily: fonts.medium, fontSize: 34, lineHeight: 40, color: C.ink, textAlign: "center" }}>
+                {prayer.title}
               </Text>
+              {prayer.subtitle ? (
+                <Text style={{ fontFamily: fonts.italic, fontSize: 19, color: C.ink2, marginTop: 6, textAlign: "center" }}>
+                  {prayer.subtitle}
+                </Text>
+              ) : null}
+              {prayer.bookPage ? (
+                <View style={{ marginTop: 8 }}>
+                  <SmallCaps color={C.ink2} size={15}>
+                    page {prayer.bookPage}
+                  </SmallCaps>
+                </View>
+              ) : null}
             </View>
-          ) : null}
-
-          {/* Bookmark hint */}
-          {bookmarked && (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginTop: spacing.s,
-                gap: 4,
-              }}
-            >
-              <MaterialCommunityIcons
-                name="bookmark"
-                size={12}
-                color={colors.sacredGold}
-              />
+            <Ornament />
+            {prayer.rubric ? (
               <Text
                 style={{
-                  fontSize: 11,
-                  color: colors.sacredGold,
-                  fontStyle: 'italic',
-                  opacity: 0.8,
+                  fontFamily: fonts.italic,
+                  color: C.rubric,
+                  fontSize: 18 + readStep * 1.5,
+                  lineHeight: Math.round((18 + readStep * 1.5) * 1.5),
+                  marginBottom: 18,
                 }}
               >
-                Saved to Bookmarks
+                {prayer.rubric}
               </Text>
+            ) : null}
+            {prayer.kind === "list" && prayer.items ? (
+              <View>
+                {prayer.items.map((item, itemIndex) => (
+                  <Text
+                    key={`${itemIndex}-${item.slice(0, 12)}`}
+                    style={{
+                      fontFamily: fonts.regular,
+                      fontSize: size,
+                      lineHeight: Math.round(size * 1.62),
+                      color: C.ink,
+                      marginBottom: 10,
+                    }}
+                  >
+                    {itemIndex + 1}. {item}
+                  </Text>
+                ))}
+              </View>
+            ) : prayer.text ? (
+              <ReadingText text={prayer.text} size={size} dropCap />
+            ) : null}
+            <Text style={{ textAlign: "center", color: C.rubric, marginVertical: 20, fontSize: 16 }}>✠</Text>
+            {next ? (
+              <Pressable
+                onPress={() => router.replace(`/prayers/${next.slug}` as never)}
+                style={({ pressed }) => ({
+                  borderTopWidth: 1,
+                  borderTopColor: C.rule,
+                  paddingVertical: 16,
+                  backgroundColor: pressed ? C.highlight : "transparent",
+                })}
+              >
+                <SmallCaps color={C.ink2} size={15}>
+                  Next
+                </SmallCaps>
+                <Text style={{ fontFamily: fonts.regular, fontSize: 20, color: C.rubric, marginTop: 4 }}>{next.title} ›</Text>
+              </Pressable>
+            ) : null}
+            {!showMargin && margin ? <View style={{ marginTop: 12 }}>{margin}</View> : null}
+          </View>
+          {showMargin && margin ? (
+            <View style={{ width: layout.marginalia, borderLeftWidth: 1, borderLeftColor: C.rule, paddingLeft: 28 }}>
+              {margin}
             </View>
-          )}
+          ) : null}
         </View>
-
-        <GoldRule />
-
-        {prayer.rubric ? <Rubric text={prayer.rubric} /> : null}
-
-        {prayer.kind === 'list' && prayer.items ? (
-          <ListContent items={prayer.items} />
-        ) : prayer.text ? (
-          <PrayerText text={prayer.text} />
-        ) : null}
-
-        <SectionNavPills currentSlug={prayer.slug} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

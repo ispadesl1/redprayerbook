@@ -5,7 +5,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { View } from 'react-native';
 import { StaticPage } from './StaticPage';
-import { colors } from '@/theme/colors';
 
 type Props = {
   progress: SharedValue<number>;
@@ -53,7 +52,7 @@ export function CurlingPage({
             top: 0,
             bottom: 0,
             left: 0,
-            backgroundColor: colors.deepOnyx,
+            backgroundColor: 'rgba(31,26,22,0.35)',
           },
           shadowStyle,
         ]}

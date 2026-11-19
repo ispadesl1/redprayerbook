@@ -1,33 +1,49 @@
+const light = {
+  text: "#1F1A16",
+  tint: "#9B1C1C",
+  background: "#F5EFE3",
+  foreground: "#1F1A16",
+  card: "#EEE5D4",
+  cardForeground: "#1F1A16",
+  primary: "#9B1C1C",
+  primaryForeground: "#FBF5EA",
+  secondary: "#EEE5D4",
+  secondaryForeground: "#1F1A16",
+  muted: "#EEE5D4",
+  mutedForeground: "#574C42",
+  accent: "#9B1C1C",
+  accentForeground: "#FBF5EA",
+  destructive: "#9B1C1C",
+  destructiveForeground: "#FBF5EA",
+  border: "#D8CAB2",
+  input: "#D8CAB2",
+};
+
+const dark = {
+  text: "#F3E6D4",
+  tint: "#E7B4AE",
+  background: "#1C1814",
+  foreground: "#F3E6D4",
+  card: "#2A241C",
+  cardForeground: "#F3E6D4",
+  primary: "#E7B4AE",
+  primaryForeground: "#1C1814",
+  secondary: "#2A241C",
+  secondaryForeground: "#F3E6D4",
+  muted: "#2A241C",
+  mutedForeground: "#CDBBA4",
+  accent: "#E7B4AE",
+  accentForeground: "#1C1814",
+  destructive: "#E7B4AE",
+  destructiveForeground: "#1C1814",
+  border: "#4A3F34",
+  input: "#4A3F34",
+};
+
 const colors = {
-  light: {
-    text: "#F5EBDD",
-    tint: "#D4AF37",
-
-    background: "#0E0E10",
-    foreground: "#F5EBDD",
-
-    card: "#2A0A0E",
-    cardForeground: "#F5EBDD",
-
-    primary: "#D4AF37",
-    primaryForeground: "#0E0E10",
-
-    secondary: "#1A0507",
-    secondaryForeground: "#F5EBDD",
-
-    muted: "#2A0A0E",
-    mutedForeground: "rgba(245,235,221,0.5)",
-
-    accent: "#8B0E1A",
-    accentForeground: "#D4AF37",
-
-    destructive: "#B22222",
-    destructiveForeground: "#F5EBDD",
-
-    border: "rgba(212,175,55,0.35)",
-    input: "rgba(212,175,55,0.35)",
-  },
-  radius: 12,
+  light,
+  dark,
+  radius: 2,
 };
 
 export default colors;

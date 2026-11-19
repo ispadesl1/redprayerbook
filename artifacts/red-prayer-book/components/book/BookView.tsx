@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { View, Dimensions, Pressable, Text } from 'react-native';
+import { View, useWindowDimensions, Pressable, Text } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useReducedMotion,
   withTiming,
   withSequence,
   runOnJS,
@@ -14,8 +15,9 @@ import { StaticPage } from './StaticPage';
 import { PageJumpSheet } from './PageJumpSheet';
 import { useBookStore } from '@/lib/store';
 import { playFlipSfx, playRiffleSfx, stopRiffleSfx } from '@/lib/audio';
-import { colors } from '@/theme/colors';
-import { spacing, radii } from '@/theme/spacing';
+import { usePalette } from '@/hooks/usePalette';
+import { fonts } from '@/theme/typography';
+import { spacing } from '@/theme/spacing';
 
 type Props = {
   riffleTarget: number | null;
@@ -27,10 +29,16 @@ export function BookView({ riffleTarget, onRiffleComplete }: Props) {
   const setCurrentIndex = useBookStore((s) => s.setCurrentIndex);
   const totalPages = useBookStore((s) => s.totalPages);
   const [jumpSheetVisible, setJumpSheetVisible] = useState(false);
+  const C = usePalette();
+  const prefersReduced = useReducedMotion();
+  const reduced = useSharedValue(!!prefersReduced);
+  useEffect(() => {
+    reduced.value = !!prefersReduced;
+  }, [prefersReduced, reduced]);
 
-  const { width: W, height: H } = Dimensions.get('window');
-  const pageWidth = W;
-  const pageHeight = H - 180;
+  const { width: W, height: H } = useWindowDimensions();
+  const pageWidth = Math.min(W, 720);
+  const pageHeight = Math.max(320, H - 220);
 
   const curl = useSharedValue(0);
 
@@ -86,6 +94,13 @@ export function BookView({ riffleTarget, onRiffleComplete }: Props) {
           const released = -e.translationX / pageWidth;
           const velocity = -e.velocityX / pageWidth;
           const goesForward = released > 0.5 || velocity > 1.4;
+          if (reduced.value) {
+            if (goesForward && currentIndex < totalPages - 1) {
+              runOnJS(setCurrentIndex)(currentIndex + 1);
+            }
+            curl.value = 0;
+            return;
+          }
           if (goesForward && currentIndex < totalPages - 1) {
             curl.value = withTiming(
               1,
@@ -103,7 +118,7 @@ export function BookView({ riffleTarget, onRiffleComplete }: Props) {
             });
           }
         }),
-    [pageWidth, currentIndex, totalPages]
+    [pageWidth, currentIndex, totalPages, reduced]
   );
 
   const shadowStyle = useAnimatedStyle(() => ({
@@ -111,8 +126,8 @@ export function BookView({ riffleTarget, onRiffleComplete }: Props) {
   }));
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.surfaceDeep }}>
-      <View style={{ width: pageWidth, height: pageHeight, backgroundColor: '#111' }}>
+    <View style={{ flex: 1, backgroundColor: C.paper, alignItems: 'center' }}>
+      <View style={{ width: pageWidth, height: pageHeight, backgroundColor: C.paper }}>
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
           <StaticPage index={Math.max(0, currentIndex - 1)} side="left" />
         </View>
@@ -143,8 +158,8 @@ export function BookView({ riffleTarget, onRiffleComplete }: Props) {
           justifyContent: 'space-between',
           paddingHorizontal: spacing.m,
           paddingVertical: spacing.s,
-          backgroundColor: colors.surface,
-          borderTopColor: colors.hairline,
+          backgroundColor: C.paper,
+          borderTopColor: C.rule,
           borderTopWidth: 1,
         }}
       >
@@ -155,7 +170,7 @@ export function BookView({ riffleTarget, onRiffleComplete }: Props) {
             opacity: currentIndex === 0 ? 0.3 : 1,
           }}
         >
-          <Text style={{ color: colors.sacredGold, fontSize: 28 }}>‹</Text>
+          <Text style={{ color: C.rubric, fontSize: 28 }}>‹</Text>
         </Pressable>
 
         <Pressable
@@ -164,13 +179,12 @@ export function BookView({ riffleTarget, onRiffleComplete }: Props) {
             alignItems: 'center',
             paddingVertical: spacing.xs,
             paddingHorizontal: spacing.m,
-            borderRadius: radii.pill,
-            backgroundColor: colors.surfaceElevated,
-            borderColor: colors.hairline,
+            backgroundColor: 'transparent',
+            borderColor: C.rule,
             borderWidth: 1,
           }}
         >
-          <Text style={{ color: colors.sacredGold, fontFamily: 'serif', fontSize: 13 }}>
+          <Text style={{ color: C.ink, fontFamily: fonts.regular, fontSize: 16 }}>
             Page {currentIndex + 1} of {totalPages}  ✎
           </Text>
         </Pressable>
@@ -182,7 +196,7 @@ export function BookView({ riffleTarget, onRiffleComplete }: Props) {
             opacity: currentIndex === totalPages - 1 ? 0.3 : 1,
           }}
         >
-          <Text style={{ color: colors.sacredGold, fontSize: 28 }}>›</Text>
+          <Text style={{ color: C.rubric, fontSize: 28 }}>›</Text>
         </Pressable>
       </View>
 

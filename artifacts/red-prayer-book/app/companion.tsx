@@ -13,7 +13,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { colors as C } from "@/theme/colors";
+import { usePalette } from "@/hooks/usePalette";
+import { fonts } from "@/theme/typography";
 import { spacing, radii } from "@/theme/spacing";
 
 const API_BASE = `${process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : ""}/api`;
@@ -41,6 +42,7 @@ const SUGGESTIONS = [
 ];
 
 export default function CompanionScreen() {
+  const C = usePalette();
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -180,7 +182,7 @@ export default function CompanionScreen() {
               width: 34,
               height: 34,
               borderRadius: 17,
-              backgroundColor: C.byzantineCrimson,
+              backgroundColor: "transparent",
               alignItems: "center",
               justifyContent: "center",
               borderWidth: 1,
@@ -194,17 +196,17 @@ export default function CompanionScreen() {
         <View
           style={{
             maxWidth: "78%",
-            backgroundColor: isUser ? C.byzantineCrimson : C.surfaceElevated,
+            backgroundColor: isUser ? C.paper2 : C.paper,
             borderRadius: radii.m,
             borderWidth: 1,
-            borderColor: isUser ? C.sacredGold : C.hairline,
+            borderColor: C.rule,
             padding: spacing.m,
           }}
         >
           <Text
             style={{
-              color: isUser ? C.sacredGold : C.textPrimary,
-              fontFamily: "serif",
+              color: C.ink,
+              fontFamily: fonts.regular,
               fontSize: 15,
               lineHeight: 22,
             }}
@@ -224,7 +226,7 @@ export default function CompanionScreen() {
       <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: C.surfaceDeep, alignItems: "center", justifyContent: "center" }}>
         <MaterialCommunityIcons name="cross" size={40} color={C.sacredGold} style={{ marginBottom: spacing.m }} />
         <ActivityIndicator color={C.sacredGold} size="large" />
-        <Text style={{ color: C.textMuted, fontFamily: "serif", marginTop: spacing.m }}>
+        <Text style={{ color: C.textMuted, fontFamily: fonts.regular, marginTop: spacing.m }}>
           Preparing your spiritual companion…
         </Text>
       </SafeAreaView>
@@ -256,7 +258,7 @@ export default function CompanionScreen() {
             width: 38,
             height: 38,
             borderRadius: 19,
-            backgroundColor: C.byzantineCrimson,
+            backgroundColor: "transparent",
             alignItems: "center",
             justifyContent: "center",
             borderWidth: 1,
@@ -267,7 +269,7 @@ export default function CompanionScreen() {
           <MaterialCommunityIcons name="cross" size={18} color={C.sacredGold} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16 }}>
+          <Text style={{ color: C.sacredGold, fontFamily: fonts.regular, fontWeight: "700", fontSize: 16 }}>
             Father Seraphim
           </Text>
           <Text style={{ color: C.textMuted, fontSize: 11 }}>
@@ -291,7 +293,7 @@ export default function CompanionScreen() {
                   width: 72,
                   height: 72,
                   borderRadius: 36,
-                  backgroundColor: C.byzantineCrimson,
+                  backgroundColor: "transparent",
                   alignItems: "center",
                   justifyContent: "center",
                   borderWidth: 2,
@@ -301,10 +303,10 @@ export default function CompanionScreen() {
               >
                 <MaterialCommunityIcons name="cross" size={34} color={C.sacredGold} />
               </View>
-              <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 22, textAlign: "center", marginBottom: spacing.s }}>
+              <Text style={{ color: C.sacredGold, fontFamily: fonts.regular, fontWeight: "700", fontSize: 22, textAlign: "center", marginBottom: spacing.s }}>
                 Glory to God for All Things
               </Text>
-              <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 14, textAlign: "center", lineHeight: 22 }}>
+              <Text style={{ color: C.textSecondary, fontFamily: fonts.regular, fontSize: 14, textAlign: "center", lineHeight: 22 }}>
                 I am Father Seraphim, your Orthodox spiritual companion. Ask me about prayers, the saints, fasting, the sacraments, or anything on your heart.
               </Text>
             </View>
@@ -320,7 +322,7 @@ export default function CompanionScreen() {
                     key={s}
                     onPress={() => sendMessage(s)}
                     style={({ pressed }) => ({
-                      backgroundColor: pressed ? C.byzantineCrimson : C.surfaceElevated,
+                      backgroundColor: pressed ? C.highlight : "transparent",
                       borderWidth: 1,
                       borderColor: C.hairline,
                       borderRadius: radii.pill,
@@ -328,7 +330,7 @@ export default function CompanionScreen() {
                       paddingVertical: 8,
                     })}
                   >
-                    <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 13 }}>{s}</Text>
+                    <Text style={{ color: C.textPrimary, fontFamily: fonts.regular, fontSize: 13 }}>{s}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -363,7 +365,7 @@ export default function CompanionScreen() {
             style={{
               flex: 1,
               color: C.textPrimary,
-              fontFamily: "serif",
+              fontFamily: fonts.regular,
               fontSize: 15,
               lineHeight: 22,
               backgroundColor: C.surface,
@@ -390,7 +392,7 @@ export default function CompanionScreen() {
               height: 44,
               borderRadius: 22,
               backgroundColor:
-                !input.trim() || loading ? C.surface : C.byzantineCrimson,
+                "transparent",
               alignItems: "center",
               justifyContent: "center",
               borderWidth: 1,

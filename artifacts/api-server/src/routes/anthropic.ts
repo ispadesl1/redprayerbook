@@ -45,7 +45,8 @@ router.post("/anthropic/conversations", async (req: Request, res: Response) => {
 
 router.delete("/anthropic/conversations/:conversationId", async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.conversationId, 10);
+    const rawId = req.params.conversationId;
+    const id = parseInt(Array.isArray(rawId) ? rawId[0] : rawId, 10);
     if (isNaN(id)) {
       res.status(400).json({ error: "Invalid conversation ID" });
       return;
@@ -60,7 +61,8 @@ router.delete("/anthropic/conversations/:conversationId", async (req: Request, r
 
 router.get("/anthropic/conversations/:conversationId/messages", async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.conversationId, 10);
+    const rawId = req.params.conversationId;
+    const id = parseInt(Array.isArray(rawId) ? rawId[0] : rawId, 10);
     if (isNaN(id)) {
       res.status(400).json({ error: "Invalid conversation ID" });
       return;
@@ -75,7 +77,8 @@ router.get("/anthropic/conversations/:conversationId/messages", async (req: Requ
 
 router.post("/anthropic/conversations/:conversationId/messages", async (req: Request, res: Response) => {
   try {
-    const conversationId = parseInt(req.params.conversationId, 10);
+    const rawConversationId = req.params.conversationId;
+    const conversationId = parseInt(Array.isArray(rawConversationId) ? rawConversationId[0] : rawConversationId, 10);
     if (isNaN(conversationId)) {
       res.status(400).json({ error: "Invalid conversation ID" });
       return;
