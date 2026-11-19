@@ -129,7 +129,7 @@ export default function Bible() {
               onChangeText={handleSearchChange}
               placeholder="Search cached verses"
               placeholderTextColor={C.ink2}
-              style={{ flex: 1, fontFamily: fonts.regular, fontSize: 18, color: C.ink, paddingVertical: 8 }}
+              style={{ flex: 1, fontFamily: fonts.regular, fontSize: 18, lineHeight: 26, color: C.ink, minHeight: 44, paddingVertical: 8 }}
               autoCorrect={false}
             />
             {searching ? <ActivityIndicator color={C.rubric} /> : null}

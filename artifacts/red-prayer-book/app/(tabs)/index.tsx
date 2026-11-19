@@ -84,7 +84,7 @@ function HourAndFast({
               onPress={() => onHour(item.id)}
               accessibilityRole="button"
               accessibilityState={{ selected: on }}
-              aria-selected={on}
+              aria-pressed={on}
               {...({ onKeyDown: onSpaceKey(() => onHour(item.id)) } as object)}
               style={(state) => {
                 const focused = "focused" in state && Boolean((state as { focused?: boolean }).focused);
@@ -172,12 +172,17 @@ function SaintPlate({
     <View style={{ width: 132, minHeight: 140 }}>
       <SmallCaps size={14}>Saint of the day</SmallCaps>
       {showIcon ? (
-        <Image
-          source={require("@/assets/images/saint-nicholas.png")}
-          style={{ width: 96, height: 120, marginTop: 8, borderWidth: 1, borderColor: C.rule2 }}
-          resizeMode="cover"
-          accessibilityLabel="Icon of St Nicholas the Wonderworker"
-        />
+        <View style={{ marginTop: 8 }}>
+          <Image
+            source={require("@/assets/images/saint-nicholas.png")}
+            style={{ width: 96, height: 112, borderWidth: 1, borderColor: C.rule2 }}
+            resizeMode="cover"
+            accessibilityLabel="Icon of St Nicholas the Wonderworker"
+          />
+          <Text style={{ fontFamily: fonts.medium, fontSize: 16, lineHeight: 20, color: C.ink, marginTop: 6 }} numberOfLines={3}>
+            {name}
+          </Text>
+        </View>
       ) : (
         <View style={{ marginTop: 8, minHeight: 96 }}>
           <Text style={{ fontFamily: fonts.regular, fontSize: 18, lineHeight: 22, color: C.rubric }}>✠</Text>
@@ -250,11 +255,6 @@ export default function Home() {
           failed={dayQuery.isError && !dayQuery.data}
           onRetry={() => dayQuery.refetch()}
         />
-      </View>
-      <View style={{ minHeight: 44, marginTop: 8 }}>
-        <Text style={{ fontFamily: fonts.italic, fontSize: 16, lineHeight: 22, color: C.ink2 }} numberOfLines={2}>
-          {dayQuery.data?.summaryTitle ?? (dayQuery.isError ? "Commemorations unavailable" : " ")}
-        </Text>
       </View>
 
       {!showMargin ? (

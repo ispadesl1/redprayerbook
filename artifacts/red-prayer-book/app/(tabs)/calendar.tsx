@@ -61,11 +61,18 @@ export default function Calendar() {
   return (
     <ManuscriptScroll inTabs margin={showMargin ? margin : undefined}>
       <Text style={{ fontFamily: fonts.medium, fontSize: 34, color: C.ink, textAlign: "center" }}>Calendar</Text>
-      <View style={{ flexDirection: "row", justifyContent: "center", gap: 18, marginTop: 8 }}>
+      <View accessibilityRole="radiogroup" style={{ flexDirection: "row", justifyContent: "center", gap: 18, marginTop: 8 }}>
         {(["new", "old"] as const).map((item) => {
           const on = style === item;
           return (
-            <Pressable key={item} onPress={() => setStyle(item)} accessibilityState={{ selected: on }} style={{ minHeight: 44, justifyContent: "center" }}>
+            <Pressable
+              key={item}
+              onPress={() => setStyle(item)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: on, checked: on }}
+              aria-checked={on}
+              style={{ minHeight: 44, minWidth: 44, justifyContent: "center", paddingHorizontal: 4 }}
+            >
               <Text
                 style={{
                   fontFamily: fonts.medium,
@@ -106,9 +113,9 @@ export default function Calendar() {
       />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 14, maxWidth: 470, alignSelf: "center" }}>
         <Legend swatch="strict" label="Strict fast" />
-        <Legend swatch="fish" label="Fish, oil, wine" />
-        <Legend swatch="weekly" label="Wed/Fri fast" />
-        <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 15 }}>✠ Great feast</Text>
+        <Legend swatch="wine" label="Wine and oil" />
+        <Legend swatch="fish" label="Fish, wine and oil" />
+        <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 15, lineHeight: 20 }}>✠ Great feast</Text>
       </View>
       {monthQuery.isError && !monthQuery.data ? (
         <Text style={{ fontFamily: fonts.italic, color: C.ink2, marginTop: 12, textAlign: "center" }}>
@@ -127,15 +134,14 @@ export default function Calendar() {
           monthQuery.refetch();
         }}
       />
-      {!showMargin ? <View style={{ marginTop: 20 }}>{margin}</View> : null}
-      <Text style={{ fontFamily: fonts.italic, fontSize: 14, lineHeight: 20, color: C.ink2, marginTop: 28 }}>
+      <Text style={{ fontFamily: fonts.italic, fontSize: 15, lineHeight: 22, color: C.ink2, marginTop: 28 }}>
         {CALENDAR_CREDIT}
       </Text>
     </ManuscriptScroll>
   );
 }
 
-function Legend({ swatch, label }: { swatch: "strict" | "fish" | "weekly"; label: string }) {
+function Legend({ swatch, label }: { swatch: "strict" | "wine" | "fish"; label: string }) {
   const C = usePalette();
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -144,9 +150,9 @@ function Legend({ swatch, label }: { swatch: "strict" | "fish" | "weekly"; label
           width: 7,
           height: 7,
           borderRadius: 4,
-          backgroundColor: swatch === "fish" ? "transparent" : swatch === "weekly" ? C.ink2 : C.rubric,
-          borderWidth: swatch === "fish" ? 1 : 0,
-          borderColor: C.rubric,
+          backgroundColor: swatch === "strict" ? C.rubric : "transparent",
+          borderWidth: swatch === "strict" ? 0 : 1,
+          borderColor: swatch === "wine" ? C.ink2 : C.rubric,
         }}
       />
       <Text style={{ color: C.ink2, fontFamily: fonts.regular, fontSize: 15 }}>{label}</Text>

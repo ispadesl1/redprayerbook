@@ -38,7 +38,7 @@ export type LiturgicalDay = {
   stories: SaintStory[];
 };
 
-export type FastMark = "strict" | "fish" | "weekly";
+export type FastMark = "strict" | "wine" | "fish";
 
 type RawReading = {
   source?: string;
@@ -136,17 +136,26 @@ export function mapOrthocalDay(
   };
 }
 
-export function fastMark(day: Pick<LiturgicalDay, "abstentions" | "fastLevel">): FastMark | null {
+export function fastMark(
+  day: Pick<LiturgicalDay, "abstentions" | "fastLevel" | "fastLevelDesc" | "fastExceptionDesc">,
+): FastMark | null {
+  const level = day.fastLevelDesc.trim().toLowerCase();
+  const exception = day.fastExceptionDesc.trim().toLowerCase();
   const set = new Set(day.abstentions);
-  if (day.fastLevel <= 0 && set.size === 0) return null;
-  const noMeat = set.has("meat");
-  const noFish = set.has("fish");
-  const noWine = set.has("wine");
-  const noOil = set.has("oil");
-  if (noFish && noOil && noWine) return "strict";
-  if (noMeat && !noFish) return "fish";
-  if (noMeat || day.fastLevel > 0) return "weekly";
+  if ((level === "no fast" || day.fastLevel <= 0) && set.size === 0) return null;
+  if (exception.includes("fish")) return "fish";
+  if (exception.includes("wine") || exception.includes("oil") || exception.includes("caviar")) return "wine";
+  if (set.has("wine") && set.has("oil")) return "strict";
+  if (set.has("fish") && !set.has("wine") && !set.has("oil")) return "wine";
+  if (set.has("meat") && !set.has("fish")) return "fish";
   return null;
+}
+
+function plainFastPhrase(value: string): string {
+  const text = value.trim();
+  if (!text) return "";
+  if (text.toLowerCase() === "no overrides" || text.toLowerCase() === "no override") return "";
+  return text;
 }
 
 export function dayHeading(day: LiturgicalDay): string {
@@ -158,8 +167,7 @@ export function dayHeading(day: LiturgicalDay): string {
 }
 
 export function saintOfTheDay(day: LiturgicalDay): string {
-  if (day.saints.length > 0) return day.saints[0];
-  return dayHeading(day);
+  return dayTitle(day);
 }
 
 function calendarPath(style: CalendarStyle): "gregorian" | "julian" {
@@ -206,7 +214,7 @@ async function fetchJson(url: string): Promise<unknown> {
 export function fastLines(day: LiturgicalDay): { title: string; detail: string } {
   const unique: string[] = [];
   for (const bit of [day.fastLevelDesc, day.fastExceptionDesc]) {
-    const text = bit.trim();
+    const text = plainFastPhrase(bit);
     if (!text) continue;
     if (unique.some((item) => item.toLowerCase() === text.toLowerCase())) continue;
     unique.push(text);

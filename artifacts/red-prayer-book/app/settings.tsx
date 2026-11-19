@@ -221,7 +221,7 @@ export default function Settings() {
           <SmallCaps>About</SmallCaps>
           <Text style={{ fontFamily: fonts.regular, fontSize: 18, color: C.ink, marginTop: 8 }}>Version 1.0.0</Text>
           <Text style={{ fontFamily: fonts.italic, fontSize: 16, lineHeight: 24, color: C.ink2, marginTop: 12 }}>
-            ✠ Sacred words, set like the printed book.
+            <Text style={{ fontFamily: fonts.regular }}>✠</Text> Sacred words, set like the printed book.
           </Text>
         </View>
       </ManuscriptScroll>

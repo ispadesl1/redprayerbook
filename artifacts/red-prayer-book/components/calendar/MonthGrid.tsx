@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { usePalette } from "@/hooks/usePalette";
-import { fastMark, type LiturgicalDay } from "@/lib/calendar";
+import { fastLines, fastMark, type LiturgicalDay } from "@/lib/calendar";
 import { fonts } from "@/theme/typography";
 
 type Props = {
@@ -49,6 +49,7 @@ export function MonthGrid({ year, month, days, selected, onSelect }: Props) {
           const info = days?.find((item) => item.civilDay === day);
           const mark = info ? fastMark(info) : null;
           const feast = info?.greatFeast ?? false;
+          const fastName = info ? fastLines(info).title : "";
           const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
           const isSelected = day === selected;
           const sunday = new Date(year, month, day).getDay() === 0;
@@ -56,7 +57,7 @@ export function MonthGrid({ year, month, days, selected, onSelect }: Props) {
             <Pressable
               key={day}
               onPress={() => onSelect(day)}
-              accessibilityLabel={`${day}${feast ? ", great feast" : ""}`}
+              accessibilityLabel={`${day}${feast ? ", great feast" : ""}${fastName ? `, ${fastName}` : ""}`}
               accessibilityState={{ selected: isSelected }}
               style={{
                 width: "14.285%",
@@ -81,16 +82,16 @@ export function MonthGrid({ year, month, days, selected, onSelect }: Props) {
               </Text>
               <View style={{ flexDirection: "row", gap: 3, height: 8, alignItems: "center" }}>
                 {feast ? (
-                  <Text style={{ color: isSelected ? C.onRubric : C.rubric, fontSize: 9, lineHeight: 10 }}>✠</Text>
+                  <Text style={{ color: isSelected ? C.onRubric : C.rubric, fontFamily: fonts.regular, fontSize: 11, lineHeight: 14 }}>✠</Text>
                 ) : null}
                 {mark === "strict" ? (
                   <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: isSelected ? C.onRubric : C.rubric }} />
                 ) : null}
+                {mark === "wine" ? (
+                  <View style={{ width: 5, height: 5, borderRadius: 3, borderWidth: 1, borderColor: isSelected ? C.onRubric : C.ink2 }} />
+                ) : null}
                 {mark === "fish" ? (
                   <View style={{ width: 5, height: 5, borderRadius: 3, borderWidth: 1, borderColor: isSelected ? C.onRubric : C.rubric }} />
-                ) : null}
-                {mark === "weekly" ? (
-                  <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: isSelected ? C.onRubric : C.ink2 }} />
                 ) : null}
               </View>
             </Pressable>

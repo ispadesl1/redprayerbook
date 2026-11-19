@@ -29,7 +29,7 @@ export default function Onboarding() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.paper, paddingTop: insets.top + 36, paddingBottom: insets.bottom + 28, paddingHorizontal: 28 }}>
-      <Text style={{ textAlign: "center", color: C.rubric, fontSize: 28 }}>✠</Text>
+      <Text style={{ textAlign: "center", color: C.rubric, fontFamily: fonts.regular, fontSize: 28, lineHeight: 34 }}>✠</Text>
       <Text style={{ fontFamily: fonts.medium, fontSize: 34, lineHeight: 40, color: C.ink, textAlign: "center", marginTop: 28 }}>
         {current.title}
       </Text>

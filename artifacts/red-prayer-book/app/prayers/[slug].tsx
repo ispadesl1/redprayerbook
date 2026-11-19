@@ -170,7 +170,7 @@ export default function PrayerDetail() {
             ) : prayer.text ? (
               <ReadingText text={prayer.text} size={size} dropCap />
             ) : null}
-            <Text style={{ textAlign: "center", color: C.rubric, marginVertical: 20, fontSize: 16 }}>✠</Text>
+            <Text style={{ textAlign: "center", color: C.rubric, fontFamily: fonts.regular, marginVertical: 20, fontSize: 16, lineHeight: 22 }}>✠</Text>
             {next ? (
               <Pressable
                 onPress={() => router.replace(`/prayers/${next.slug}` as never)}

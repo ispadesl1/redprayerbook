@@ -133,7 +133,7 @@ export default function Prayers() {
           placeholder="Search the prayers"
           placeholderTextColor={C.ink2}
           accessibilityLabel="Search prayers"
-          style={{ flex: 1, fontFamily: fonts.regular, fontSize: 19, color: C.ink, paddingVertical: 8 }}
+          style={{ flex: 1, fontFamily: fonts.regular, fontSize: 19, lineHeight: 26, color: C.ink, minHeight: 44, paddingVertical: 8 }}
           autoCorrect={false}
         />
       </View>

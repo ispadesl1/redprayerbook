@@ -92,6 +92,7 @@ export function BookView() {
           <Animated.View style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, pageStyle]}>
             <CurlingPage
               progress={curl}
+              direction={dir}
               frontIndex={currentIndex}
               backIndex={Math.max(0, Math.min(totalPages - 1, underIndex))}
               width={pageWidth}

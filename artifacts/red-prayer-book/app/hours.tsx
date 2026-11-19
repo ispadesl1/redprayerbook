@@ -64,7 +64,13 @@ export default function HoursScreen() {
           {CANONICAL_HOURS.map((hour) => {
             const on = hour.id === current.id;
             return (
-              <Pressable key={hour.id} onPress={() => setCurrent(hour)} style={{ paddingHorizontal: 8, paddingVertical: 8, minHeight: 40 }}>
+              <Pressable
+                key={hour.id}
+                onPress={() => setCurrent(hour)}
+                accessibilityRole="button"
+                aria-pressed={on}
+                style={{ paddingHorizontal: 8, minHeight: 44, justifyContent: "center" }}
+              >
                 <Text
                   style={{
                     fontFamily: fonts.medium,

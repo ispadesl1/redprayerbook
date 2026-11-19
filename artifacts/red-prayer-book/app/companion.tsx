@@ -176,45 +176,13 @@ export default function CompanionScreen() {
           paddingHorizontal: spacing.s,
         }}
       >
-        {!isUser && (
-          <View
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 0,
-              backgroundColor: "transparent",
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: C.sacredGold,
-              flexShrink: 0,
-            }}
-          >
-            <MaterialCommunityIcons name="cross" size={16} color={C.sacredGold} />
-          </View>
-        )}
-        <View
-          style={{
-            maxWidth: "78%",
-            backgroundColor: isUser ? C.paper2 : C.paper,
-            borderRadius: radii.m,
-            borderWidth: 1,
-            borderColor: C.rule,
-            padding: spacing.m,
-          }}
-        >
-          <Text
-            style={{
-              color: C.ink,
-              fontFamily: fonts.regular,
-              fontSize: 15,
-              lineHeight: 22,
-            }}
-          >
+        <View style={{ flex: 1, maxWidth: "100%", borderBottomWidth: 1, borderBottomColor: C.rule, paddingVertical: 12 }}>
+          <Text style={{ fontFamily: fonts.medium, fontSize: 14, lineHeight: 18, color: C.rubric, fontVariant: ["small-caps"], letterSpacing: 0.4 }}>
+            {isUser ? "You" : "Companion"}
+          </Text>
+          <Text style={{ color: C.ink, fontFamily: fonts.regular, fontSize: 18, lineHeight: 28, marginTop: 4 }}>
             {item.content}
-            {item.streaming && (
-              <Text style={{ color: C.sacredGold }}>▌</Text>
-            )}
+            {item.streaming ? <Text style={{ fontFamily: fonts.regular, color: C.rubric }}> ▌</Text> : null}
           </Text>
         </View>
       </View>
@@ -248,35 +216,20 @@ export default function CompanionScreen() {
         }}
       >
         <Pressable
+          accessibilityLabel="Back"
           onPress={() => router.back()}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, marginRight: spacing.m })}
+          style={({ pressed }) => ({ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.6 : 1 })}
         >
-          <MaterialCommunityIcons name="chevron-left" size={26} color={C.sacredGold} />
+          <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 22, lineHeight: 26 }}>‹</Text>
         </Pressable>
-        <View
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 0,
-            backgroundColor: "transparent",
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1,
-            borderColor: C.sacredGold,
-            marginRight: spacing.s,
-          }}
-        >
-          <MaterialCommunityIcons name="cross" size={18} color={C.sacredGold} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: C.sacredGold, fontFamily: fonts.regular, fontWeight: "700", fontSize: 16 }}>
-            Father Seraphim
+        <View style={{ flex: 1, paddingLeft: 8 }}>
+          <Text style={{ color: C.ink, fontFamily: fonts.medium, fontSize: 22, lineHeight: 28 }}>
+            Companion
           </Text>
-          <Text style={{ color: C.textMuted, fontFamily: fonts.italic, fontSize: 15 }}>
-            Orthodox Spiritual Companion
+          <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 16, lineHeight: 22 }}>
+            The service is not available in this build
           </Text>
         </View>
-        <MaterialCommunityIcons name="dots-vertical" size={22} color={C.textMuted} />
       </View>
 
       <KeyboardAvoidingView
@@ -287,53 +240,34 @@ export default function CompanionScreen() {
         {messages.length === 0 ? (
           <View style={{ flex: 1 }}>
             {/* Welcome */}
-            <View style={{ alignItems: "center", paddingTop: spacing.xxl, paddingHorizontal: spacing.l, paddingBottom: spacing.l }}>
-              <View
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 0,
-                  backgroundColor: "transparent",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 2,
-                  borderColor: C.sacredGold,
-                  marginBottom: spacing.m,
-                }}
-              >
-                <MaterialCommunityIcons name="cross" size={34} color={C.sacredGold} />
-              </View>
-              <Text style={{ color: C.sacredGold, fontFamily: fonts.regular, fontWeight: "700", fontSize: 22, textAlign: "center", marginBottom: spacing.s }}>
-                Glory to God for All Things
+            <View style={{ paddingTop: 28, paddingHorizontal: 22, paddingBottom: 12 }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18, lineHeight: 24, textAlign: "center" }}>✠</Text>
+              <Text style={{ color: C.ink, fontFamily: fonts.medium, fontSize: 28, lineHeight: 34, textAlign: "center", marginTop: 12 }}>
+                Glory to God for all things
               </Text>
-              <Text style={{ color: C.textSecondary, fontFamily: fonts.regular, fontSize: 14, textAlign: "center", lineHeight: 22 }}>
-                I am Father Seraphim, your Orthodox spiritual companion. Ask me about prayers, the saints, fasting, the sacraments, or anything on your heart.
+              <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, textAlign: "center", marginTop: 10 }}>
+                Ask about prayers, the saints, fasting, or the sacraments. The companion needs a service that is not running here.
               </Text>
             </View>
-
-            {/* Suggestion chips */}
-            <View style={{ paddingHorizontal: spacing.m, gap: spacing.s }}>
-              <Text style={{ color: C.rubric, fontFamily: fonts.medium, fontSize: 16, fontVariant: ["small-caps"], letterSpacing: 0.6, marginBottom: spacing.xs }}>
+            <View style={{ paddingHorizontal: 22 }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.medium, fontSize: 16, lineHeight: 22, fontVariant: ["small-caps"], letterSpacing: 0.6, marginBottom: 4 }}>
                 Begin with a question
               </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.xs }}>
-                {SUGGESTIONS.map((s) => (
-                  <Pressable
-                    key={s}
-                    onPress={() => sendMessage(s)}
-                    style={({ pressed }) => ({
-                      backgroundColor: pressed ? C.highlight : "transparent",
-                      borderWidth: 1,
-                      borderColor: C.hairline,
-                      borderRadius: 0,
-                      paddingHorizontal: spacing.m,
-                      paddingVertical: 8,
-                    })}
-                  >
-                    <Text style={{ color: C.textPrimary, fontFamily: fonts.regular, fontSize: 13 }}>{s}</Text>
-                  </Pressable>
-                ))}
-              </View>
+              {SUGGESTIONS.map((s) => (
+                <Pressable
+                  key={s}
+                  onPress={() => sendMessage(s)}
+                  style={({ pressed }) => ({
+                    minHeight: 44,
+                    justifyContent: "center",
+                    borderBottomWidth: 1,
+                    borderBottomColor: C.rule,
+                    backgroundColor: pressed ? C.highlight : "transparent",
+                  })}
+                >
+                  <Text style={{ color: C.ink, fontFamily: fonts.regular, fontSize: 18, lineHeight: 26 }}>{s}</Text>
+                </Pressable>
+              ))}
             </View>
           </View>
         ) : (
@@ -364,16 +298,16 @@ export default function CompanionScreen() {
           <TextInput
             style={{
               flex: 1,
-              color: C.textPrimary,
+              color: C.ink,
               fontFamily: fonts.regular,
-              fontSize: 15,
-              lineHeight: 22,
-              backgroundColor: C.surface,
-              borderRadius: radii.m,
-              borderWidth: 1,
-              borderColor: C.hairline,
-              paddingHorizontal: spacing.m,
-              paddingVertical: spacing.s,
+              fontSize: 18,
+              lineHeight: 26,
+              backgroundColor: "transparent",
+              borderBottomWidth: 1,
+              borderBottomColor: C.ink2,
+              minHeight: 44,
+              paddingHorizontal: 4,
+              paddingVertical: 8,
               maxHeight: 120,
             }}
             placeholder="Ask Father Seraphim…"
