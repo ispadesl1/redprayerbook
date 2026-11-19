@@ -1,7 +1,7 @@
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { FadeInBlock, SmallCaps } from "@/components/ui/manuscript";
 import { usePalette } from "@/hooks/usePalette";
-import { dayHeading, MONTHS, WEEKDAYS, type LiturgicalDay } from "@/lib/calendar";
+import { dayNotes, dayTitle, fastLines, MONTHS, WEEKDAYS, type LiturgicalDay } from "@/lib/calendar";
 import type { CalendarStyle } from "@/lib/prefs";
 import { fonts } from "@/theme/typography";
 
@@ -12,11 +12,14 @@ type Props = {
   loading: boolean;
   failed: boolean;
   textFailed?: boolean;
+  onRetry?: () => void;
 };
 
-export function DayEntry({ date, style, day, loading, failed, textFailed }: Props) {
+export function DayEntry({ date, style, day, loading, failed, textFailed, onRetry }: Props) {
   const C = usePalette();
-  const heading = day ? dayHeading(day) : "";
+  const heading = day ? dayTitle(day) : "";
+  const notes = day ? dayNotes(day) : "";
+  const fast = day ? fastLines(day) : null;
   const church =
     day && style === "old"
       ? `${WEEKDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS[date.getMonth()]} · Old Calendar ${day.churchDay} ${MONTHS[(day.churchMonth || 1) - 1]}`
@@ -26,41 +29,32 @@ export function DayEntry({ date, style, day, loading, failed, textFailed }: Prop
     <FadeInBlock token={`${date.toDateString()}-${style}-${heading}`}>
       <View style={{ marginTop: 26, borderTopWidth: 1, borderTopColor: C.rule2, paddingTop: 18 }}>
         <SmallCaps size={15}>{church}</SmallCaps>
-        {loading && !day ? (
-          <Text style={{ fontFamily: fonts.italic, fontSize: 18, color: C.ink2, marginTop: 10 }}>
-            Loading the commemorations…
-          </Text>
-        ) : null}
+        <View style={{ minHeight: 64, marginTop: 6 }}>
+          {heading ? (
+            <Text style={{ fontFamily: fonts.medium, fontSize: 22, lineHeight: 28, color: C.ink }} numberOfLines={2}>
+              {heading}
+            </Text>
+          ) : failed ? (
+            <Text style={{ fontFamily: fonts.medium, fontSize: 22, lineHeight: 28, color: C.ink }}>Commemorations unavailable</Text>
+          ) : (
+            <Text style={{ fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, color: C.ink2 }}>
+              {loading ? "Loading the commemorations…" : "No commemoration was listed for this day."}
+            </Text>
+          )}
+        </View>
         {failed && !day ? (
-          <View style={{ marginTop: 10 }}>
-            <Text style={{ fontFamily: fonts.medium, fontSize: 26, lineHeight: 32, color: C.ink }}>
-              Commemorations unavailable
-            </Text>
-            <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 26, color: C.ink2, marginTop: 8 }}>
-              Saints and readings could not be loaded. Nothing is shown in their place.
-            </Text>
-          </View>
+          <Pressable onPress={onRetry} style={{ minHeight: 44, justifyContent: "center" }}>
+            <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+          </Pressable>
         ) : null}
-        {day && !heading && !loading ? (
-          <Text style={{ fontFamily: fonts.italic, fontSize: 18, color: C.ink2, marginTop: 8 }}>
-            No commemoration was listed for this day.
-          </Text>
-        ) : null}
-        {heading ? (
-          <Text style={{ fontFamily: fonts.medium, fontSize: 26, lineHeight: 32, color: C.ink, marginTop: 6 }}>
-            {heading}
-          </Text>
-        ) : null}
-        {day && day.saints.length > 1 ? (
-          <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 26, color: C.ink2, marginTop: 8 }}>
-            {day.saints.join(" · ")}
+        {notes ? (
+          <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 24, color: C.ink2, marginTop: 6 }} numberOfLines={3}>
+            {notes}
           </Text>
         ) : null}
         {day ? (
           <View style={{ marginTop: 14, gap: 8 }}>
-            {day.fastLevelDesc ? (
-              <Line label="Fast" value={[day.fastLevelDesc, day.fastExceptionDesc].filter(Boolean).join(" · ")} />
-            ) : null}
+            {fast?.title ? <Line label="Fast" value={fast.title} /> : null}
             {day.abstentions.length > 0 ? <Line label="Abstain" value={day.abstentions.join(", ")} /> : null}
             {day.tone != null ? <Line label="Tone" value={String(day.tone)} /> : null}
             {day.readings.length === 0 ? (

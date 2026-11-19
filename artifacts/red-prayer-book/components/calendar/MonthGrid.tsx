@@ -1,7 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { usePalette } from "@/hooks/usePalette";
 import { fastMark, type LiturgicalDay } from "@/lib/calendar";
-import { getTodayFastStatus } from "@/lib/fasting";
 import { fonts } from "@/theme/typography";
 
 type Props = {
@@ -13,14 +12,6 @@ type Props = {
 };
 
 const DOW = ["S", "M", "T", "W", "T", "F", "S"];
-
-function localMark(year: number, month: number, day: number): "strict" | "fish" | "weekly" | null {
-  const status = getTodayFastStatus(new Date(year, month, day));
-  if (status.strictness === "strict") return "strict";
-  if (status.strictness === "moderate" || status.strictness === "light") return "fish";
-  if (status.strictness === "weekly") return "weekly";
-  return null;
-}
 
 export function MonthGrid({ year, month, days, selected, onSelect }: Props) {
   const C = usePalette();
@@ -56,7 +47,7 @@ export function MonthGrid({ year, month, days, selected, onSelect }: Props) {
         {cells.map((day, index) => {
           if (day == null) return <View key={`e-${index}`} style={{ width: "14.285%", aspectRatio: 1 }} />;
           const info = days?.find((item) => item.civilDay === day);
-          const mark = info ? fastMark(info) : localMark(year, month, day);
+          const mark = info ? fastMark(info) : null;
           const feast = info?.greatFeast ?? false;
           const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
           const isSelected = day === selected;

@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Image, Pressable, Share, Text, View } from "react-native";
 import { router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
 import { BadgeItem } from "@/components/ui/BadgeItem";
 import {
   DropCap,
@@ -10,22 +9,20 @@ import {
   Ornament,
   SmallCaps,
   TocRow,
+  focusRing,
+  onSpaceKey,
   useFrame,
 } from "@/components/ui/manuscript";
+import { useLiturgicalDay } from "@/hooks/useCalendarData";
 import { usePalette } from "@/hooks/usePalette";
+import { useToday } from "@/hooks/useToday";
 import { BADGE_DEFS, getAllBadgeProgress, incrementBadge } from "@/lib/badges";
-import {
-  fetchLiturgicalDay,
-  formatCivilDate,
-  saintOfTheDay,
-} from "@/lib/calendar";
+import { fastLines, formatCivilDate, saintOfTheDay, type LiturgicalDay } from "@/lib/calendar";
 import { CANONICAL_HOURS, getCurrentHour, type CanonicalHour } from "@/lib/canonicalHours";
 import { recordStreakToday } from "@/lib/db";
-import { getPeriodProgress, getTodayFastStatus } from "@/lib/fasting";
 import { getPrayerBySlug } from "@/lib/prayers";
 import { isHourKept, localYmd, usePrefs } from "@/lib/prefs";
 import { fonts } from "@/theme/typography";
-import { useEffect } from "react";
 
 const TODAYS_PRAYER =
   "Lord, teach me to pray with my whole heart, and in Your will, not mine, be done.";
@@ -48,17 +45,26 @@ const NEEDS: { title: string; slug: string }[] = [
   { title: "A Prayer in Time of Trouble", slug: "in-time-of-trouble" },
 ];
 
+function isWonderworker(name: string): boolean {
+  return /Nicholas.*(Myra|Wonderworker)|Wonderworker.*Nicholas/i.test(name);
+}
+
 function HourAndFast({
   hourId,
   onHour,
+  day,
+  failed,
+  onRetry,
 }: {
   hourId: string;
   onHour: (id: string) => void;
+  day?: LiturgicalDay;
+  failed: boolean;
+  onRetry: () => void;
 }) {
   const C = usePalette();
   const hour = CANONICAL_HOURS.find((item) => item.id === hourId) ?? getCurrentHour();
-  const fast = getTodayFastStatus();
-  const progress = fast.period ? getPeriodProgress(fast.period) : null;
+  const fast = day ? fastLines(day) : null;
   return (
     <View>
       <SmallCaps>The hour</SmallCaps>
@@ -78,7 +84,19 @@ function HourAndFast({
               onPress={() => onHour(item.id)}
               accessibilityRole="button"
               accessibilityState={{ selected: on }}
-              style={{ paddingVertical: 8, paddingHorizontal: 8, minHeight: 40, justifyContent: "center" }}
+              aria-selected={on}
+              {...({ onKeyDown: onSpaceKey(() => onHour(item.id)) } as object)}
+              style={(state) => {
+                const focused = "focused" in state && Boolean((state as { focused?: boolean }).focused);
+                return {
+                  paddingVertical: 8,
+                  paddingHorizontal: 8,
+                  minHeight: 44,
+                  justifyContent: "center" as const,
+                  backgroundColor: state.pressed ? C.highlight : "transparent",
+                  ...focusRing(C.rubric, focused),
+                };
+              }}
             >
               <Text
                 style={{
@@ -107,20 +125,31 @@ function HourAndFast({
 
       <Ornament />
       <SmallCaps>The fast</SmallCaps>
-      <Text style={{ fontFamily: fonts.regular, fontSize: 19, lineHeight: 28, color: C.ink, marginTop: 4 }}>
-        {fast.label}
-        {fast.period && progress ? `, day ${progress.elapsed} of ${progress.total}` : ""}.
-      </Text>
-      <Text style={{ fontFamily: fonts.italic, fontSize: 18, lineHeight: 26, color: C.ink2, marginTop: 2 }}>
-        {fast.sublabel}
-      </Text>
-      {fast.rules.slice(0, 3).map((rule) => (
-        <Text key={rule} style={{ fontFamily: fonts.regular, fontSize: 16, lineHeight: 24, color: C.ink2, marginTop: 4 }}>
-          · {rule}
-        </Text>
-      ))}
-      <Pressable onPress={() => router.push("/fasting" as never)} style={{ minHeight: 44, justifyContent: "center" }}>
-        <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>The fasting calendar ›</Text>
+      <View style={{ minHeight: 72, marginTop: 4 }}>
+        {day ? (
+          <>
+            <Text style={{ fontFamily: fonts.regular, fontSize: 19, lineHeight: 28, color: C.ink }}>
+              {fast?.title || "No fast is listed for this day."}
+            </Text>
+            {fast?.detail ? (
+              <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 26, color: C.ink2, marginTop: 2 }}>{fast.detail}</Text>
+            ) : null}
+          </>
+        ) : failed ? (
+          <>
+            <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 26, color: C.ink2 }}>
+              The fast for this calendar isn’t available.
+            </Text>
+            <Pressable onPress={onRetry} style={{ minHeight: 44, justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 26, color: C.ink2 }}>Loading the fast…</Text>
+        )}
+      </View>
+      <Pressable onPress={() => router.push("/fasting" as never)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: "center" }}>
+        <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>The book’s fasting calendar ›</Text>
       </Pressable>
     </View>
   );
@@ -130,27 +159,38 @@ function SaintPlate({
   name,
   loading,
   failed,
+  onRetry,
 }: {
   name: string;
   loading: boolean;
   failed: boolean;
+  onRetry: () => void;
 }) {
   const C = usePalette();
-  const showIcon = /nicholas/i.test(name);
-  const caption = loading ? "Loading…" : failed ? "Not available offline" : name || "No commemoration listed";
+  const showIcon = isWonderworker(name);
   return (
-    <View style={{ width: 108, borderWidth: 1, borderColor: C.rule2, backgroundColor: C.paper, padding: 4 }}>
+    <View style={{ width: 132, minHeight: 140 }}>
+      <SmallCaps size={14}>Saint of the day</SmallCaps>
       {showIcon ? (
         <Image
           source={require("@/assets/images/saint-nicholas.png")}
-          style={{ width: "100%", height: 128 }}
+          style={{ width: 96, height: 120, marginTop: 8, borderWidth: 1, borderColor: C.rule2 }}
           resizeMode="cover"
-          accessibilityLabel="Icon of St Nicholas"
+          accessibilityLabel="Icon of St Nicholas the Wonderworker"
         />
-      ) : null}
-      <Text style={{ fontFamily: fonts.italic, fontSize: 13, lineHeight: 17, color: C.ink2, textAlign: "center", marginTop: 5, marginBottom: 2 }}>
-        {caption}
-      </Text>
+      ) : (
+        <View style={{ marginTop: 8, minHeight: 96 }}>
+          <Text style={{ fontFamily: fonts.regular, fontSize: 18, lineHeight: 22, color: C.rubric }}>✠</Text>
+          <Text style={{ fontFamily: fonts.medium, fontSize: 20, lineHeight: 26, color: C.ink, marginTop: 4 }} numberOfLines={4}>
+            {name || (failed ? "Commemorations unavailable" : " ")}
+          </Text>
+          {failed && !name ? (
+            <Pressable onPress={onRetry} style={{ minHeight: 44, justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 16 }}>Try again</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      )}
     </View>
   );
 }
@@ -161,7 +201,7 @@ export default function Home() {
   const style = usePrefs((state) => state.calendarStyle);
   const checks = usePrefs((state) => state.ruleChecks);
   const toggleHour = usePrefs((state) => state.toggleHour);
-  const today = useMemo(() => new Date(), []);
+  const today = useToday();
   const ymd = localYmd(today);
   const [hourId, setHourId] = useState(getCurrentHour().id);
   const [badges, setBadges] = useState<Record<string, number>>({});
@@ -174,14 +214,18 @@ export default function Home() {
     })();
   }, []);
 
-  const dayQuery = useQuery({
-    queryKey: ["orthocal-day", style, ymd],
-    queryFn: () => fetchLiturgicalDay(today, style),
-    staleTime: 12 * 60 * 60 * 1000,
-  });
+  const dayQuery = useLiturgicalDay(today, style);
 
   const kept = CANONICAL_HOURS.filter((hour) => isHourKept(ymd, hour.id, checks)).length;
-  const aside = <HourAndFast hourId={hourId} onHour={setHourId} />;
+  const aside = (
+    <HourAndFast
+      hourId={hourId}
+      onHour={setHourId}
+      day={dayQuery.data}
+      failed={dayQuery.isError && !dayQuery.data}
+      onRetry={() => dayQuery.refetch()}
+    />
+  );
   const saintName = dayQuery.data ? saintOfTheDay(dayQuery.data) : "";
 
   return (
@@ -200,13 +244,18 @@ export default function Home() {
             <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Read the prayer ›</Text>
           </Pressable>
         </View>
-        <SaintPlate name={saintName} loading={dayQuery.isLoading} failed={dayQuery.isError} />
+        <SaintPlate
+          name={saintName}
+          loading={dayQuery.isLoading && !dayQuery.data}
+          failed={dayQuery.isError && !dayQuery.data}
+          onRetry={() => dayQuery.refetch()}
+        />
       </View>
-      {dayQuery.data?.summaryTitle ? (
-        <Text style={{ fontFamily: fonts.italic, fontSize: 16, color: C.ink2, marginTop: 8 }}>
-          {dayQuery.data.summaryTitle}
+      <View style={{ minHeight: 44, marginTop: 8 }}>
+        <Text style={{ fontFamily: fonts.italic, fontSize: 16, lineHeight: 22, color: C.ink2 }} numberOfLines={2}>
+          {dayQuery.data?.summaryTitle ?? (dayQuery.isError ? "Commemorations unavailable" : " ")}
         </Text>
-      ) : null}
+      </View>
 
       {!showMargin ? (
         <>
@@ -219,7 +268,10 @@ export default function Home() {
 
       <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
         <SmallCaps>Today’s hours</SmallCaps>
-        <Text style={{ fontFamily: fonts.regular, fontSize: 16, color: C.ink2, fontVariant: ["tabular-nums"] }}>
+        <Text
+          accessibilityLiveRegion="polite"
+          style={{ fontFamily: fonts.regular, fontSize: 16, color: C.ink2, fontVariant: ["tabular-nums"] }}
+        >
           {kept} of {CANONICAL_HOURS.length} prayed
         </Text>
       </View>
@@ -231,7 +283,11 @@ export default function Home() {
         const now = hour.id === getCurrentHour().id;
         return (
           <View key={hour.id} style={{ flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: C.rule, minHeight: 56 }}>
-            <Pressable onPress={() => router.push(`/hours?id=${hour.id}` as never)} style={{ flex: 1, paddingVertical: 8 }}>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => router.push(`/hours?id=${hour.id}` as never)}
+              style={({ pressed }) => ({ flex: 1, paddingVertical: 8, minHeight: 44, justifyContent: "center", backgroundColor: pressed ? C.highlight : "transparent" })}
+            >
               <Text style={{ fontFamily: fonts.regular, fontSize: 18, color: now ? C.rubric : C.ink }}>
                 {hour.name}
                 {now ? "  ·  now" : ""}

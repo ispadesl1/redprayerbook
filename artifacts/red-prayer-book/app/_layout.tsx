@@ -26,7 +26,11 @@ import { usePrefs } from "@/lib/prefs";
 
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: 1, retryDelay: 800 },
+  },
+});
 
 function RootLayoutNav() {
   const C = usePalette();

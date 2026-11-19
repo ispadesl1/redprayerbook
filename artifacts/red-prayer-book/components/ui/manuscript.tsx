@@ -1,5 +1,6 @@
 import { ReactNode, useEffect } from "react";
 import {
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -9,6 +10,7 @@ import {
   type TextStyle,
   type ViewStyle,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -23,6 +25,26 @@ import { fonts } from "@/theme/typography";
 import { layout } from "@/theme/spacing";
 import { EASE_OUT, motion } from "@/theme/motion";
 import type { Palette } from "@/theme/colors";
+
+type KeyEvent = { nativeEvent: { key?: string }; preventDefault?: () => void };
+
+export function onSpaceKey(action: () => void) {
+  return (event: KeyEvent) => {
+    if (event.nativeEvent.key === " " || event.nativeEvent.key === "Spacebar") {
+      event.preventDefault?.();
+      action();
+    }
+  };
+}
+
+export function focusRing(color: string, focused?: boolean): ViewStyle {
+  if (!focused) return {};
+  return { outlineStyle: "solid", outlineWidth: 2, outlineColor: color, outlineOffset: 2 };
+}
+
+function pressState(state: { pressed: boolean; focused?: boolean }) {
+  return state;
+}
 
 export function useMotion() {
   const reduced = useReducedMotion();
@@ -135,17 +157,22 @@ export function TocRow({
   const C = usePalette();
   return (
     <Pressable
+      accessibilityRole="link"
       onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: "row",
-        alignItems: "baseline",
-        gap: 8,
-        minHeight: 48,
-        paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: C.rule,
-        backgroundColor: pressed ? C.highlight : "transparent",
-      })}
+      style={(state) => {
+        const { pressed, focused } = pressState(state);
+        return {
+          flexDirection: "row",
+          alignItems: "baseline",
+          gap: 8,
+          minHeight: 48,
+          paddingVertical: 10,
+          borderBottomWidth: 1,
+          borderBottomColor: C.rule,
+          backgroundColor: pressed ? C.highlight : "transparent",
+          ...focusRing(C.rubric, focused),
+        };
+      }}
     >
       <View style={{ flexShrink: 1 }}>
         <Text
@@ -279,15 +306,38 @@ export function HourCheck({
     opacity: opacity.value,
     transform: [{ scale: scale.value }],
   }));
+  const press = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: press.value }] }));
+  const toggle = () => {
+    if (Platform.OS !== "web") Haptics.selectionAsync().catch(() => {});
+    onToggle();
+  };
   return (
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ checked }}
+      aria-checked={checked}
       accessibilityLabel={label}
-      onPress={onToggle}
-      hitSlop={8}
-      style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+      onPress={toggle}
+      {...({ onKeyDown: onSpaceKey(toggle) } as object)}
+      onPressIn={() => {
+        press.value = withTiming(0.97, { duration: reduced ? 0 : 160, easing: EASE_OUT });
+      }}
+      onPressOut={() => {
+        press.value = withTiming(1, { duration: reduced ? 0 : 160, easing: EASE_OUT });
+      }}
+      style={(state) => {
+        const { focused } = pressState(state);
+        return {
+          width: 44,
+          height: 44,
+          alignItems: "center",
+          justifyContent: "center",
+          ...focusRing(C.rubric, focused),
+        };
+      }}
     >
+      <Animated.View style={pressStyle}>
       <View
         style={{
           width: 22,
@@ -303,6 +353,7 @@ export function HourCheck({
           ✓
         </Animated.Text>
       </View>
+      </Animated.View>
     </Pressable>
   );
 }

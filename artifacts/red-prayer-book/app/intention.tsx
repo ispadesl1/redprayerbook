@@ -132,7 +132,7 @@ export default function IntentionScreen() {
           style={{
             width: 36,
             height: 36,
-            borderRadius: 18,
+            borderRadius: 0,
             backgroundColor: "transparent",
             alignItems: "center",
             justifyContent: "center",
@@ -175,7 +175,7 @@ export default function IntentionScreen() {
                 style={{
                   width: 64,
                   height: 64,
-                  borderRadius: 32,
+                  borderRadius: 0,
                   backgroundColor: "transparent",
                   alignItems: "center",
                   justifyContent: "center",
@@ -276,7 +276,7 @@ export default function IntentionScreen() {
                 fontSize: 12,
                 fontWeight: "600",
                 letterSpacing: 0.8,
-                textTransform: "uppercase",
+                fontVariant: ["small-caps"],
                 marginBottom: spacing.s,
               }}
             >
@@ -314,7 +314,7 @@ export default function IntentionScreen() {
               style={{
                 width: 80,
                 height: 80,
-                borderRadius: 40,
+                borderRadius: 0,
                 backgroundColor: "transparent",
                 alignItems: "center",
                 justifyContent: "center",

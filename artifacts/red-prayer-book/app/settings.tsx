@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ManuscriptScroll, SmallCaps, StackBar } from "@/components/ui/manuscript";
+import { ManuscriptScroll, SmallCaps, StackBar, focusRing, onSpaceKey } from "@/components/ui/manuscript";
 import { usePalette } from "@/hooks/usePalette";
 import { CALENDAR_CREDIT } from "@/lib/calendar";
 import {
@@ -37,8 +37,20 @@ function Toggle({
       accessibilityRole="switch"
       accessibilityLabel={label}
       accessibilityState={{ checked: value }}
+      aria-checked={value}
       onPress={() => onChange(!value)}
-      style={{ minHeight: 44, justifyContent: "center", paddingLeft: 12 }}
+      {...({ onKeyDown: onSpaceKey(() => onChange(!value)) } as object)}
+      style={(state) => {
+        const focused = "focused" in state && Boolean((state as { focused?: boolean }).focused);
+        return {
+          minWidth: 44,
+          minHeight: 44,
+          justifyContent: "center" as const,
+          alignItems: "center" as const,
+          paddingHorizontal: 8,
+          ...focusRing(C.rubric, focused),
+        };
+      }}
     >
       <Text
         style={{
@@ -196,11 +208,11 @@ export default function Settings() {
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: C.rule, paddingVertical: 8 }}>
             <Text style={{ flex: 1, fontFamily: fonts.regular, fontSize: 18, color: C.ink }}>Prayer text size</Text>
-            <Pressable onPress={() => setReadStep(readStep - 1)} style={{ padding: 10 }}>
-              <Text style={{ color: C.rubric, fontSize: 16 }}>A</Text>
+            <Pressable accessibilityLabel="Smaller text" onPress={() => setReadStep(readStep - 1)} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 16, lineHeight: 20 }}>A</Text>
             </Pressable>
-            <Pressable onPress={() => setReadStep(readStep + 1)} style={{ padding: 10 }}>
-              <Text style={{ color: C.rubric, fontSize: 22 }}>A</Text>
+            <Pressable accessibilityLabel="Larger text" onPress={() => setReadStep(readStep + 1)} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 22, lineHeight: 26 }}>A</Text>
             </Pressable>
           </View>
         </View>

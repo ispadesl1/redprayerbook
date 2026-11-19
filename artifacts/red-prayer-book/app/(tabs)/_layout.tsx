@@ -60,13 +60,24 @@ function ContentsRail() {
         return (
           <Pressable
             key={tab.name}
+            accessibilityRole="tab"
+            aria-selected={active}
+            aria-current={active ? "page" : undefined}
             onPress={() => router.push(tab.href as never)}
-            style={({ pressed }) => ({
-              flexDirection: "row",
-              alignItems: "center",
-              paddingVertical: 9,
-              backgroundColor: pressed ? C.highlight : "transparent",
-            })}
+            style={(state) => {
+              const focused = "focused" in state && Boolean((state as { focused?: boolean }).focused);
+              return {
+                flexDirection: "row" as const,
+                alignItems: "center" as const,
+                minHeight: 44,
+                paddingVertical: 10,
+                backgroundColor: state.pressed ? C.highlight : "transparent",
+                outlineStyle: focused ? ("solid" as const) : undefined,
+                outlineWidth: focused ? 2 : 0,
+                outlineColor: C.rubric,
+                outlineOffset: 2,
+              };
+            }}
           >
             <Text style={{ flex: 1, fontFamily: fonts.regular, fontSize: 19, color: active ? C.rubric : C.ink }}>
               {tab.label}
@@ -102,10 +113,10 @@ export default function TabLayout() {
             tabBarLabelStyle: {
               fontFamily: fonts.medium,
               fontSize: 13,
+              lineHeight: 16,
               letterSpacing: 0.4,
               fontVariant: ["small-caps"],
               textTransform: "none",
-              marginTop: 1,
             },
             tabBarStyle: wide
               ? { display: "none", height: 0 }
@@ -114,8 +125,8 @@ export default function TabLayout() {
                   backgroundColor: C.paper,
                   borderTopColor: C.rule,
                   borderTopWidth: 1,
-                  height: 58 + insets.bottom,
-                  paddingBottom: insets.bottom,
+                  height: 62 + insets.bottom,
+                  paddingBottom: insets.bottom + 4,
                   paddingTop: 6,
                   elevation: 0,
                   shadowOpacity: 0,

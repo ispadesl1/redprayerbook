@@ -9,10 +9,3 @@ export function playFlipSfx() {
   // Audio plays when expo-audio assets are available
 }
 
-export function playRiffleSfx() {
-  // Riffle audio placeholder
-}
-
-export function stopRiffleSfx() {
-  // Stop riffle placeholder
-}

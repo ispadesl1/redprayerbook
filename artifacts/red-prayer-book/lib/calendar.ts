@@ -189,10 +189,97 @@ async function writeCache(key: string, value: unknown): Promise<void> {
   }
 }
 
+const FETCH_TIMEOUT_MS = 8000;
+
 async function fetchJson(url: string): Promise<unknown> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Calendar request failed (${response.status})`);
-  return response.json();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`Calendar request failed (${response.status})`);
+    return response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export function fastLines(day: LiturgicalDay): { title: string; detail: string } {
+  const unique: string[] = [];
+  for (const bit of [day.fastLevelDesc, day.fastExceptionDesc]) {
+    const text = bit.trim();
+    if (!text) continue;
+    if (unique.some((item) => item.toLowerCase() === text.toLowerCase())) continue;
+    unique.push(text);
+  }
+  return {
+    title: unique.join(" · "),
+    detail: day.abstentions.length > 0 ? `Abstain from ${day.abstentions.join(", ")}` : "",
+  };
+}
+
+export function dayTitle(day: LiturgicalDay): string {
+  if (day.feasts[0]) return day.feasts[0];
+  if (day.saints[0]) return day.saints[0];
+  const summary = day.summaryTitle.split(";")[0]?.trim();
+  if (summary) return summary;
+  return day.titles[0] ?? "";
+}
+
+export function dayNotes(day: LiturgicalDay): string {
+  const title = dayTitle(day);
+  const names = [...day.feasts, ...day.saints].filter((name) => name && name !== title);
+  return [...new Set(names)].join(" · ");
+}
+
+function dayKey(date: Date, style: CalendarStyle): string {
+  const cal = calendarPath(style);
+  return `${CACHE}:day:${cal}:${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+}
+
+function monthKey(year: number, monthIndex: number, style: CalendarStyle): string {
+  const cal = calendarPath(style);
+  return `${CACHE}:month:${cal}:${year}-${monthIndex + 1}`;
+}
+
+export async function readCachedDay(date: Date, style: CalendarStyle): Promise<LiturgicalDay | null> {
+  return readCache<LiturgicalDay>(dayKey(date, style));
+}
+
+export async function readCachedMonth(
+  year: number,
+  monthIndex: number,
+  style: CalendarStyle,
+): Promise<LiturgicalDay[] | null> {
+  return readCache<LiturgicalDay[]>(monthKey(year, monthIndex, style));
+}
+
+export async function loadFreshDay(date: Date, style: CalendarStyle): Promise<LiturgicalDay> {
+  const year = date.getFullYear();
+  const monthIndex = date.getMonth();
+  const day = date.getDate();
+  const cal = calendarPath(style);
+  const url = `${SOURCE}/${cal}/${year}/${monthIndex + 1}/${day}/`;
+  const payload = await fetchJson(url);
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Calendar day was empty");
+  }
+  const mapped = mapOrthocalDay(payload as RawDay, year, monthIndex, day);
+  await writeCache(dayKey(date, style), mapped);
+  return mapped;
+}
+
+export async function loadFreshMonth(
+  year: number,
+  monthIndex: number,
+  style: CalendarStyle,
+): Promise<LiturgicalDay[]> {
+  const cal = calendarPath(style);
+  const url = `${SOURCE}/${cal}/${year}/${monthIndex + 1}/`;
+  const payload = await fetchJson(url);
+  if (!Array.isArray(payload)) throw new Error("Calendar month was not a list");
+  const days = payload.map((item, index) => mapOrthocalDay(item as RawDay, year, monthIndex, index + 1));
+  await writeCache(monthKey(year, monthIndex, style), days);
+  return days;
 }
 
 export async function fetchLiturgicalMonth(
@@ -200,47 +287,15 @@ export async function fetchLiturgicalMonth(
   monthIndex: number,
   style: CalendarStyle,
 ): Promise<LiturgicalDay[]> {
-  const cal = calendarPath(style);
-  const key = `${CACHE}:month:${cal}:${year}-${monthIndex + 1}`;
-  const url = `${SOURCE}/${cal}/${year}/${monthIndex + 1}/`;
-  try {
-    const payload = await fetchJson(url);
-    if (!Array.isArray(payload)) throw new Error("Calendar month was not a list");
-    const days = payload.map((item, index) =>
-      mapOrthocalDay(item as RawDay, year, monthIndex, index + 1),
-    );
-    await writeCache(key, days);
-    return days;
-  } catch (error) {
-    const cached = await readCache<LiturgicalDay[]>(key);
-    if (cached) return cached;
-    throw error;
-  }
+  const cached = await readCachedMonth(year, monthIndex, style);
+  if (cached) return cached;
+  return loadFreshMonth(year, monthIndex, style);
 }
 
-export async function fetchLiturgicalDay(
-  date: Date,
-  style: CalendarStyle,
-): Promise<LiturgicalDay> {
-  const year = date.getFullYear();
-  const monthIndex = date.getMonth();
-  const day = date.getDate();
-  const cal = calendarPath(style);
-  const key = `${CACHE}:day:${cal}:${year}-${monthIndex + 1}-${day}`;
-  const url = `${SOURCE}/${cal}/${year}/${monthIndex + 1}/${day}/`;
-  try {
-    const payload = await fetchJson(url);
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      throw new Error("Calendar day was empty");
-    }
-    const mapped = mapOrthocalDay(payload as RawDay, year, monthIndex, day);
-    await writeCache(key, mapped);
-    return mapped;
-  } catch (error) {
-    const cached = await readCache<LiturgicalDay>(key);
-    if (cached) return cached;
-    throw error;
-  }
+export async function fetchLiturgicalDay(date: Date, style: CalendarStyle): Promise<LiturgicalDay> {
+  const cached = await readCachedDay(date, style);
+  if (cached) return cached;
+  return loadFreshDay(date, style);
 }
 
 export const CALENDAR_CREDIT =

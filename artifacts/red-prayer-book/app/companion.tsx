@@ -181,7 +181,7 @@ export default function CompanionScreen() {
             style={{
               width: 34,
               height: 34,
-              borderRadius: 17,
+              borderRadius: 0,
               backgroundColor: "transparent",
               alignItems: "center",
               justifyContent: "center",
@@ -257,7 +257,7 @@ export default function CompanionScreen() {
           style={{
             width: 38,
             height: 38,
-            borderRadius: 19,
+            borderRadius: 0,
             backgroundColor: "transparent",
             alignItems: "center",
             justifyContent: "center",
@@ -272,7 +272,7 @@ export default function CompanionScreen() {
           <Text style={{ color: C.sacredGold, fontFamily: fonts.regular, fontWeight: "700", fontSize: 16 }}>
             Father Seraphim
           </Text>
-          <Text style={{ color: C.textMuted, fontSize: 11 }}>
+          <Text style={{ color: C.textMuted, fontFamily: fonts.italic, fontSize: 15 }}>
             Orthodox Spiritual Companion
           </Text>
         </View>
@@ -292,7 +292,7 @@ export default function CompanionScreen() {
                 style={{
                   width: 72,
                   height: 72,
-                  borderRadius: 36,
+                  borderRadius: 0,
                   backgroundColor: "transparent",
                   alignItems: "center",
                   justifyContent: "center",
@@ -313,7 +313,7 @@ export default function CompanionScreen() {
 
             {/* Suggestion chips */}
             <View style={{ paddingHorizontal: spacing.m, gap: spacing.s }}>
-              <Text style={{ color: C.textMuted, fontSize: 12, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase", marginBottom: spacing.xs }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.medium, fontSize: 16, fontVariant: ["small-caps"], letterSpacing: 0.6, marginBottom: spacing.xs }}>
                 Begin with a question
               </Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.xs }}>
@@ -325,7 +325,7 @@ export default function CompanionScreen() {
                       backgroundColor: pressed ? C.highlight : "transparent",
                       borderWidth: 1,
                       borderColor: C.hairline,
-                      borderRadius: radii.pill,
+                      borderRadius: 0,
                       paddingHorizontal: spacing.m,
                       paddingVertical: 8,
                     })}
@@ -390,7 +390,7 @@ export default function CompanionScreen() {
             style={({ pressed }) => ({
               width: 44,
               height: 44,
-              borderRadius: 22,
+              borderRadius: 0,
               backgroundColor:
                 "transparent",
               alignItems: "center",

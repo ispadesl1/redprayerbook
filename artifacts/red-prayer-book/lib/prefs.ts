@@ -33,7 +33,8 @@ export const usePrefs = create<Prefs>()(
         const next = current.includes(hourId)
           ? current.filter((id) => id !== hourId)
           : [...current, hourId];
-        set({ ruleChecks: { ...get().ruleChecks, [date]: next } });
+        const merged = { ...get().ruleChecks, [date]: next };
+        set({ ruleChecks: pruneChecks(merged) });
       },
       hydrated: false,
       setHydrated: (hydrated) => set({ hydrated }),
@@ -63,4 +64,15 @@ export function localYmd(date = new Date()): string {
 
 export function isHourKept(date: string, hourId: string, checks: Record<string, string[]>): boolean {
   return (checks[date] ?? []).includes(hourId);
+}
+
+function pruneChecks(checks: Record<string, string[]>, keepDays = 90): Record<string, string[]> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - keepDays);
+  const min = localYmd(cutoff);
+  const next: Record<string, string[]> = {};
+  for (const [key, value] of Object.entries(checks)) {
+    if (key >= min) next[key] = value;
+  }
+  return next;
 }

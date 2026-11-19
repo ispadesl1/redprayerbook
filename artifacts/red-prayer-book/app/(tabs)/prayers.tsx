@@ -19,7 +19,7 @@ function Chevron({ open }: { open: boolean }) {
   const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 90}deg` }] }));
   const C = usePalette();
   return (
-    <Animated.Text style={[{ color: C.ink2, fontSize: 16, width: 16 }, style]}>›</Animated.Text>
+    <Animated.Text style={[{ color: C.ink2, fontSize: 16, lineHeight: 20, width: 16, fontFamily: fonts.regular }, style]}>›</Animated.Text>
   );
 }
 
@@ -126,7 +126,7 @@ export default function Prayers() {
         {PRAYER_SECTIONS.reduce((sum, section) => sum + section.prayers.length, 0)} prayers in {PRAYER_SECTIONS.length} parts
       </Text>
       <View style={{ flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: C.ink2, minHeight: 48, marginTop: 18, marginBottom: 8 }}>
-        <Text style={{ color: C.ink2, marginRight: 8, fontSize: 16 }}>⌕</Text>
+        <Text style={{ color: C.ink2, marginRight: 8, fontSize: 16, fontFamily: fonts.regular, lineHeight: 20 }}>⌕</Text>
         <TextInput
           value={query}
           onChangeText={setQuery}

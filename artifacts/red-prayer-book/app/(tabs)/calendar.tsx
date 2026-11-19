@@ -1,20 +1,14 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
 import { DayEntry } from "@/components/calendar/DaySheet";
 import { MonthGrid } from "@/components/calendar/MonthGrid";
 import { IconPress, ManuscriptScroll, SmallCaps, useFrame } from "@/components/ui/manuscript";
+import { useLiturgicalDay, useLiturgicalMonth } from "@/hooks/useCalendarData";
 import { usePalette } from "@/hooks/usePalette";
-import {
-  CALENDAR_CREDIT,
-  fetchLiturgicalDay,
-  fetchLiturgicalMonth,
-  MONTHS,
-} from "@/lib/calendar";
+import { CALENDAR_CREDIT, fastLines, MONTHS } from "@/lib/calendar";
 import { incrementBadge } from "@/lib/badges";
-import { getTodayFastStatus } from "@/lib/fasting";
-import { localYmd, usePrefs } from "@/lib/prefs";
+import { usePrefs } from "@/lib/prefs";
 import { fonts } from "@/theme/typography";
 
 export default function Calendar() {
@@ -35,31 +29,31 @@ export default function Calendar() {
     setSelected(1);
   };
 
-  const monthQuery = useQuery({
-    queryKey: ["orthocal-month", style, year, month],
-    queryFn: () => fetchLiturgicalMonth(year, month, style),
-    staleTime: 12 * 60 * 60 * 1000,
-  });
-
+  const monthQuery = useLiturgicalMonth(year, month, style);
   const selectedDate = new Date(year, month, selected);
-  const dayQuery = useQuery({
-    queryKey: ["orthocal-day", style, localYmd(selectedDate)],
-    queryFn: () => fetchLiturgicalDay(selectedDate, style),
-    staleTime: 12 * 60 * 60 * 1000,
-  });
-
+  const dayQuery = useLiturgicalDay(selectedDate, style);
   const monthDay = monthQuery.data?.find((item) => item.civilDay === selected);
   const day = dayQuery.data ?? monthDay;
-  const fast = getTodayFastStatus(selectedDate);
+  const fast = day ? fastLines(day) : null;
+  const fastFailed = (dayQuery.isError || monthQuery.isError) && !day;
 
   const margin = (
-    <View>
+    <View style={{ minHeight: 96 }}>
       <SmallCaps>This day</SmallCaps>
-      <Text style={{ fontFamily: fonts.regular, fontSize: 18, lineHeight: 26, color: C.ink, marginTop: 8 }}>
-        {fast.label}. {fast.sublabel}
-      </Text>
-      <Pressable onPress={() => router.push("/fasting" as never)} style={{ minHeight: 44, justifyContent: "center" }}>
-        <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Fasting calendar ›</Text>
+      {day ? (
+        <Text style={{ fontFamily: fonts.regular, fontSize: 18, lineHeight: 26, color: C.ink, marginTop: 8 }}>
+          {fast?.title || "No fast is listed for this day."}
+          {fast?.detail ? `\n${fast.detail}` : ""}
+        </Text>
+      ) : fastFailed ? (
+        <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 26, color: C.ink2, marginTop: 8 }}>
+          The fast for this calendar isn’t available.
+        </Text>
+      ) : (
+        <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 26, color: C.ink2, marginTop: 8 }}>Loading the fast…</Text>
+      )}
+      <Pressable onPress={() => router.push("/fasting" as never)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: "center" }}>
+        <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>The book’s fasting calendar ›</Text>
       </Pressable>
     </View>
   );
@@ -90,14 +84,14 @@ export default function Calendar() {
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
         <IconPress label="Previous month" onPress={() => shift(-1)}>
-          <Text style={{ color: C.ink, fontSize: 22 }}>‹</Text>
+          <Text style={{ color: C.ink, fontFamily: fonts.regular, fontSize: 22, lineHeight: 26 }}>‹</Text>
         </IconPress>
         <Text style={{ fontFamily: fonts.medium, fontSize: 26, color: C.ink }}>
           {MONTHS[month]}{" "}
           <Text style={{ fontVariant: ["oldstyle-nums"] }}>{year}</Text>
         </Text>
         <IconPress label="Next month" onPress={() => shift(1)}>
-          <Text style={{ color: C.ink, fontSize: 22 }}>›</Text>
+          <Text style={{ color: C.ink, fontFamily: fonts.regular, fontSize: 22, lineHeight: 26 }}>›</Text>
         </IconPress>
       </View>
       <MonthGrid
@@ -128,6 +122,10 @@ export default function Calendar() {
         loading={(dayQuery.isLoading || monthQuery.isLoading) && !day}
         failed={(dayQuery.isError || monthQuery.isError) && !day}
         textFailed={dayQuery.isError && !dayQuery.data}
+        onRetry={() => {
+          dayQuery.refetch();
+          monthQuery.refetch();
+        }}
       />
       {!showMargin ? <View style={{ marginTop: 20 }}>{margin}</View> : null}
       <Text style={{ fontFamily: fonts.italic, fontSize: 14, lineHeight: 20, color: C.ink2, marginTop: 28 }}>
