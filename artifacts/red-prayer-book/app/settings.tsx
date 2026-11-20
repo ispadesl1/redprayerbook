@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ManuscriptScroll, SmallCaps, StackBar, focusRing, onSpaceKey } from "@/components/ui/manuscript";
@@ -83,6 +83,10 @@ export default function Settings() {
   const setCalendarStyle = usePrefs((state) => state.setCalendarStyle);
   const readStep = usePrefs((state) => state.readStep);
   const setReadStep = usePrefs((state) => state.setReadStep);
+  const displayName = usePrefs((state) => state.displayName);
+  const setDisplayName = usePrefs((state) => state.setDisplayName);
+  const [nameDraft, setNameDraft] = useState(displayName);
+  const [nameFocused, setNameFocused] = useState(false);
   const [settings, setSettings] = useState<NotifSettings | null>(null);
   const [picker, setPicker] = useState<ReminderKey | null>(null);
   const [hour, setHour] = useState(7);
@@ -91,6 +95,10 @@ export default function Settings() {
   useEffect(() => {
     getNotifSettings().then(setSettings);
   }, []);
+
+  useEffect(() => {
+    setNameDraft(displayName);
+  }, [displayName]);
 
   const toggle = useCallback(
     async (kind: ReminderKey, value: boolean) => {
@@ -129,6 +137,45 @@ export default function Settings() {
     <View style={{ flex: 1, backgroundColor: C.paper }}>
       <StackBar title="Settings" onBack={() => router.back()} />
       <ManuscriptScroll>
+        <SmallCaps>Your name</SmallCaps>
+        <Text style={{ fontFamily: fonts.italic, fontSize: 15, lineHeight: 22, color: C.ink2, marginTop: 4 }}>
+          Shown on the You page. Leave it blank and the page says You.
+        </Text>
+        <TextInput
+          accessibilityLabel="Your name"
+          value={nameDraft}
+          onChangeText={setNameDraft}
+          onFocus={() => setNameFocused(true)}
+          onBlur={() => setNameFocused(false)}
+          placeholder="Your name"
+          placeholderTextColor={C.ink2}
+          maxLength={60}
+          style={{
+            marginTop: 8,
+            minHeight: 48,
+            color: C.ink,
+            fontFamily: fonts.regular,
+            fontSize: 20,
+            borderBottomWidth: nameFocused ? 2 : 1,
+            borderBottomColor: nameFocused ? C.rubric : C.ink2,
+            ...(Platform.OS === "web" ? ({ outline: "none" } as object) : null),
+          }}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Save name"
+          onPress={() => setDisplayName(nameDraft)}
+          style={(state) => ({
+            minHeight: 44,
+            justifyContent: "center",
+            alignSelf: "flex-start",
+            ...focusRing(C.rubric, "focused" in state && Boolean((state as { focused?: boolean }).focused)),
+          })}
+        >
+          <Text style={{ color: C.rubric, fontFamily: fonts.semibold, fontSize: 18 }}>Save name</Text>
+        </Pressable>
+
+        <View style={{ marginTop: 28 }}>
         <SmallCaps>Appearance</SmallCaps>
         <View style={{ flexDirection: "row", alignItems: "center", minHeight: 56, borderBottomWidth: 1, borderBottomColor: C.rule }}>
           <View style={{ flex: 1 }}>
@@ -140,6 +187,7 @@ export default function Settings() {
             onChange={(value) => setAppearance(value ? "night" : "light")}
             label="Night vellum"
           />
+        </View>
         </View>
 
         <View style={{ marginTop: 28 }}>

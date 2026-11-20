@@ -10,11 +10,11 @@ import {
   useFonts,
 } from "@expo-google-fonts/eb-garamond";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack, router } from "expo-router";
+import { Stack, router, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef } from "react";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -34,6 +34,16 @@ const queryClient = new QueryClient({
 
 function RootLayoutNav() {
   const C = usePalette();
+  const onboardingDone = usePrefs((state) => state.onboardingDone);
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!onboardingDone && !pathname.startsWith("/onboarding")) {
+      router.replace("/onboarding/0");
+    }
+  }, [onboardingDone, pathname]);
+  if (!onboardingDone && !pathname.startsWith("/onboarding")) {
+    return <View style={{ flex: 1, backgroundColor: C.paper }} />;
+  }
   return (
     <Stack
       screenOptions={{

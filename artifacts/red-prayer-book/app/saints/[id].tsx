@@ -1,50 +1,72 @@
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { ManuscriptScroll, Ornament, ReadingText, SmallCaps, StackBar } from "@/components/ui/manuscript";
+import { useLiturgicalDay } from "@/hooks/useCalendarData";
 import { usePalette } from "@/hooks/usePalette";
+import { lifeForName, saintOfTheDay, CALENDAR_CREDIT, MONTHS } from "@/lib/calendar";
+import { usePrefs } from "@/lib/prefs";
 import { fonts } from "@/theme/typography";
 
-const NICHOLAS = {
-  name: "Saint Nicholas the Wonderworker",
-  feast: "December 6 / 19",
-  life: `Saint Nicholas was born in the city of Patara in the province of Lycia in Asia Minor. His wealthy parents, who raised him in piety and virtue, reposed after a short illness, leaving their child in the hands of God.
-
-The uncle of Saint Nicholas, Bishop Nicholas of Patara, seeing that his nephew was given over to continual prayer and study of the Holy Scripture, tonsured him a reader, and then ordained him a presbyter.
-
-Saint Nicholas performed many miracles throughout his life, providing for the poor in secret, defending the innocent, and calming storms at sea. He reposed peacefully in old age, and his relics were found to be incorrupt.`,
-};
+function dateFromId(id: string | undefined): Date {
+  if (id && /^\d{4}-\d{2}-\d{2}$/.test(id)) {
+    const [year, month, day] = id.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date();
+}
 
 export default function SaintDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
   const C = usePalette();
-  const nicholas = (id ?? "nicholas") === "nicholas";
+  const style = usePrefs((state) => state.calendarStyle);
+  const date = dateFromId(id);
+  const dayQuery = useLiturgicalDay(date, style);
+  const day = dayQuery.data;
+  const requested = (typeof name === "string" ? name : "").trim() || (day ? saintOfTheDay(day) : "");
+  const life = day && requested ? lifeForName(day.stories, requested) : null;
+  const loading = dayQuery.isLoading && !day;
+  const failed = dayQuery.isError && !day;
+  const heading = life?.title || requested || "This commemoration";
 
   return (
     <View style={{ flex: 1, backgroundColor: C.paper }}>
       <StackBar title="Lives of the Saints" onBack={() => router.back()} />
       <ManuscriptScroll>
-        {nicholas ? (
+        <SmallCaps>
+          {date.getDate()} {MONTHS[date.getMonth()]} {date.getFullYear()}
+        </SmallCaps>
+        <Text style={{ fontFamily: fonts.medium, fontSize: 32, lineHeight: 38, color: C.ink, marginTop: 8 }}>{heading}</Text>
+        {loading ? (
+          <Text style={{ fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, color: C.ink2, marginTop: 16 }}>
+            Loading the life…
+          </Text>
+        ) : null}
+        {failed ? (
+          <View style={{ marginTop: 16 }}>
+            <Text style={{ fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, color: C.ink2 }}>
+              The life could not be loaded from orthocal.info.
+            </Text>
+            <Pressable onPress={() => dayQuery.refetch()} style={{ minHeight: 44, justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {!loading && !failed && life ? (
           <>
-            <SmallCaps>From the book</SmallCaps>
-            <Text style={{ fontFamily: fonts.medium, fontSize: 32, lineHeight: 38, color: C.ink, marginTop: 8 }}>
-              {NICHOLAS.name}
-            </Text>
-            <Text style={{ fontFamily: fonts.italic, fontSize: 18, color: C.ink2, marginTop: 6 }}>
-              Feast {NICHOLAS.feast}
-            </Text>
             <Ornament />
-            <ReadingText text={NICHOLAS.life} size={20} dropCap />
-          </>
-        ) : (
-          <>
-            <Text style={{ fontFamily: fonts.medium, fontSize: 28, lineHeight: 34, color: C.ink }}>
-              This life is not in the book
-            </Text>
-            <Text style={{ fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, color: C.ink2, marginTop: 12 }}>
-              The prayer book includes a life of Saint Nicholas. Other commemorations are listed on the calendar, from orthocal.info, and are not given a biography here.
+            <ReadingText text={life.story} size={20} dropCap />
+            <Text style={{ fontFamily: fonts.italic, fontSize: 16, lineHeight: 24, color: C.ink2, marginTop: 22 }}>
+              {CALENDAR_CREDIT}
             </Text>
           </>
-        )}
+        ) : null}
+        {!loading && !failed && !life ? (
+          <Text style={{ fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, color: C.ink2, marginTop: 16 }}>
+            {requested
+              ? `orthocal.info did not include a life for ${requested}.`
+              : "No commemoration was listed for this day, so there is no life to show."}
+          </Text>
+        ) : null}
       </ManuscriptScroll>
     </View>
   );

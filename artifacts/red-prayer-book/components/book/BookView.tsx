@@ -13,7 +13,6 @@ import { CurlingPage } from "./CurlingPage";
 import { StaticPage } from "./StaticPage";
 import { PageJumpSheet } from "./PageJumpSheet";
 import { useBookStore } from "@/lib/store";
-import { playFlipSfx } from "@/lib/audio";
 import { usePalette } from "@/hooks/usePalette";
 import { fonts } from "@/theme/typography";
 import { spacing } from "@/theme/spacing";
@@ -71,7 +70,6 @@ export function BookView() {
             curl.value = withTiming(1, { duration: 240, easing: EASE }, () => {
               runOnJS(setCurrentIndex)(currentIndex + (forward ? 1 : -1));
               curl.value = 0;
-              runOnJS(playFlipSfx)();
             });
           } else {
             curl.value = withTiming(0, { duration: 200, easing: EASE });

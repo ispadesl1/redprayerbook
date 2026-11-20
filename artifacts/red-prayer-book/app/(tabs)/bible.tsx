@@ -103,7 +103,7 @@ export default function Bible() {
     setHighlightedVerses((prev) => new Set(prev).add(selectedVerse));
     setActionModal(false);
     try {
-      await addHighlight(selectedBook.id, selectedChapter, selectedVerse, C.highlight);
+      await addHighlight(selectedBook.id, selectedChapter, selectedVerse, C.highlight, selectedBook.name);
       await incrementBadge("share_verses");
     } catch {
       // The verse stays marked on screen; the save can be retried.

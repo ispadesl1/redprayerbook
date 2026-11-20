@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { recordActivity, removeActivity } from "@/lib/db";
+import { CANONICAL_HOURS } from "@/lib/canonicalHours";
 import type { Appearance } from "@/theme/colors";
 
 export type CalendarStyle = "new" | "old";
@@ -14,6 +16,10 @@ type Prefs = {
   setReadStep: (step: number) => void;
   ruleChecks: Record<string, string[]>;
   toggleHour: (date: string, hourId: string) => void;
+  displayName: string;
+  setDisplayName: (name: string) => void;
+  onboardingDone: boolean;
+  completeOnboarding: (name?: string) => void;
   hydrated: boolean;
   setHydrated: (hydrated: boolean) => void;
 };
@@ -30,12 +36,26 @@ export const usePrefs = create<Prefs>()(
       ruleChecks: {},
       toggleHour: (date, hourId) => {
         const current = get().ruleChecks[date] ?? [];
-        const next = current.includes(hourId)
-          ? current.filter((id) => id !== hourId)
-          : [...current, hourId];
+        const adding = !current.includes(hourId);
+        const next = adding ? [...current, hourId] : current.filter((id) => id !== hourId);
         const merged = { ...get().ruleChecks, [date]: next };
         set({ ruleChecks: pruneChecks(merged) });
+        const key = `hour:${date}:${hourId}`;
+        if (adding) {
+          const hour = CANONICAL_HOURS.find((item) => item.id === hourId);
+          void recordActivity("hour", `Kept ${hour?.name ?? "an hour"}`, key);
+        } else {
+          void removeActivity(key);
+        }
       },
+      displayName: "",
+      setDisplayName: (name) => set({ displayName: name.trim().slice(0, 60) }),
+      onboardingDone: false,
+      completeOnboarding: (name) =>
+        set({
+          onboardingDone: true,
+          displayName: (name ?? get().displayName).trim().slice(0, 60),
+        }),
       hydrated: false,
       setHydrated: (hydrated) => set({ hydrated }),
     }),
@@ -47,6 +67,8 @@ export const usePrefs = create<Prefs>()(
         calendarStyle: state.calendarStyle,
         readStep: state.readStep,
         ruleChecks: state.ruleChecks,
+        displayName: state.displayName,
+        onboardingDone: state.onboardingDone,
       }),
       onRehydrateStorage: () => () => {
         usePrefs.setState({ hydrated: true });

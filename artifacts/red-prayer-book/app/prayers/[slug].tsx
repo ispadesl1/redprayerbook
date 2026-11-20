@@ -28,7 +28,7 @@ export default function PrayerDetail() {
   useEffect(() => {
     if (!prayer) return;
     isPrayerBookmarked(prayer.slug).then(setBookmarked);
-    recordPrayerRead(prayer.slug);
+    recordPrayerRead(prayer.slug, prayer.title);
   }, [prayer]);
 
   const section = PRAYER_SECTIONS.find((item) => item.prayers.some((entry) => entry.slug === prayer?.slug));

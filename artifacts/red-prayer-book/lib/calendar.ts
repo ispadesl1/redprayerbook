@@ -184,6 +184,54 @@ export function saintOfTheDay(day: LiturgicalDay): string {
   return "";
 }
 
+const LIFE_STOP = new Set([
+  "saint",
+  "st",
+  "holy",
+  "father",
+  "our",
+  "the",
+  "of",
+  "and",
+  "among",
+  "saints",
+  "venerable",
+  "ven",
+  "martyr",
+  "hieromartyr",
+  "new",
+  "archbishop",
+  "abp",
+  "metropolitan",
+  "bishop",
+  "great",
+]);
+
+function lifeTokens(value: string): string[] {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(" ")
+    .filter((word) => word.length > 2 && !LIFE_STOP.has(word));
+}
+
+/** Match an orthocal story title to a commemorated name. No story is invented. */
+export function lifeForName(stories: SaintStory[], name: string): SaintStory | null {
+  const wanted = lifeTokens(name);
+  if (wanted.length === 0) return null;
+  let best: { story: SaintStory; score: number } | null = null;
+  for (const story of stories) {
+    if (!story.story) continue;
+    const have = new Set(lifeTokens(story.title));
+    const score = wanted.filter((word) => have.has(word)).length;
+    if (score === 0) continue;
+    if (!best || score > best.score) best = { story, score };
+  }
+  if (!best) return null;
+  if (best.score < Math.min(2, wanted.length)) return null;
+  return best.story;
+}
+
 export function seasonOfTheDay(day: LiturgicalDay): string {
   const saint = saintOfTheDay(day);
   const feasts = day.feasts.filter((name) => name && name !== saint);

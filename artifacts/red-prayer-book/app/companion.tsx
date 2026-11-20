@@ -8,16 +8,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { ServiceConnect } from "@/components/ServiceConnect";
 import { usePalette } from "@/hooks/usePalette";
+import { apiBase, probeService, type ServiceState } from "@/lib/service";
 import { fonts } from "@/theme/typography";
 import { spacing } from "@/theme/spacing";
 
-const API_BASE = `${process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : ""}/api`;
+const API_BASE = apiBase() ?? "";
 
 interface Message {
   id: string;
@@ -47,7 +48,8 @@ export default function CompanionScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [initializing, setInitializing] = useState(true);
+  const [initializing, setInitializing] = useState(false);
+  const [service, setService] = useState<ServiceState>(apiBase() ? "checking" : "connect");
   const flatListRef = useRef<FlatList>(null);
   const streamingIdRef = useRef<string | null>(null);
 
@@ -62,15 +64,32 @@ export default function CompanionScreen() {
       const conv: Conversation = await res.json();
       setConversation(conv);
     } catch {
-      Alert.alert("Connection Error", "Could not reach the spiritual companion. Please try again.");
+      setService("connect");
     } finally {
       setInitializing(false);
     }
   }, []);
 
   useEffect(() => {
-    startConversation();
-  }, [startConversation]);
+    let cancel = false;
+    if (!apiBase()) {
+      setService("connect");
+      return;
+    }
+    probeService().then((next) => {
+      if (!cancel) setService(next);
+    });
+    return () => {
+      cancel = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (service === "ready") {
+      setInitializing(true);
+      startConversation();
+    }
+  }, [service, startConversation]);
 
   const scrollToEnd = useCallback(() => {
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
@@ -188,6 +207,10 @@ export default function CompanionScreen() {
       </View>
     );
   };
+
+  if (service !== "ready") {
+    return <ServiceConnect title="Companion" onBack={() => router.back()} />;
+  }
 
   if (initializing) {
     return (

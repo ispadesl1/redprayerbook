@@ -1,8 +1,9 @@
 import { Pressable, Text, View } from "react-native";
+import { router } from "expo-router";
 import { FadeInBlock, SmallCaps } from "@/components/ui/manuscript";
 import { usePalette } from "@/hooks/usePalette";
 import { dayNotes, dayTitle, fastLines, MONTHS, WEEKDAYS, type LiturgicalDay } from "@/lib/calendar";
-import type { CalendarStyle } from "@/lib/prefs";
+import { localYmd, type CalendarStyle } from "@/lib/prefs";
 import { fonts } from "@/theme/typography";
 
 type Props = {
@@ -20,6 +21,7 @@ export function DayEntry({ date, style, day, loading, failed, textFailed, onRetr
   const heading = day ? dayTitle(day) : "";
   const notes = day ? dayNotes(day) : "";
   const fast = day ? fastLines(day) : null;
+  const ymd = localYmd(date);
   const church =
     day && style === "old"
       ? `${WEEKDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS[date.getMonth()]} · Old Calendar ${day.churchDay} ${MONTHS[(day.churchMonth || 1) - 1]}`
@@ -89,7 +91,14 @@ export function DayEntry({ date, style, day, loading, failed, textFailed, onRetr
               const excerpt = story.story.length > 700 ? `${story.story.slice(0, 700).trimEnd()}…` : story.story;
               return (
                 <View key={story.title} style={{ marginTop: 12 }}>
-                  <SmallCaps size={15}>{story.title}</SmallCaps>
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={`Life of ${story.title}`}
+                    onPress={() => router.push(`/saints/${ymd}?name=${encodeURIComponent(story.title)}` as never)}
+                    style={{ minHeight: 44, justifyContent: "center" }}
+                  >
+                    <SmallCaps size={15}>{story.title}</SmallCaps>
+                  </Pressable>
                   {excerpt ? (
                     <Text style={{ fontFamily: fonts.regular, fontSize: 16, lineHeight: 24, color: C.ink, marginTop: 4 }}>
                       {excerpt}

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,12 +14,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { ServiceConnect } from "@/components/ServiceConnect";
 import { usePalette } from "@/hooks/usePalette";
+import { savePrayerIntention } from "@/lib/db";
+import { apiBase, probeService, type ServiceState } from "@/lib/service";
 import { fonts } from "@/theme/typography";
 import { spacing } from "@/theme/spacing";
-import { savePrayerIntention } from "@/lib/db";
 
-const API_BASE = `${process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : ""}/api`;
+const API_BASE = apiBase() ?? "";
 
 const EXAMPLE_INTENTIONS = [
   "for my sick mother's healing",
@@ -40,7 +42,22 @@ export default function IntentionScreen() {
   const [streaming, setStreaming] = useState(false);
   const [saved, setSaved] = useState(false);
   const [inputFocused, setInputFocused] = useState(true);
+  const [service, setService] = useState<ServiceState>(apiBase() ? "checking" : "connect");
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    let cancel = false;
+    if (!apiBase()) {
+      setService("connect");
+      return;
+    }
+    probeService().then((next) => {
+      if (!cancel) setService(next);
+    });
+    return () => {
+      cancel = true;
+    };
+  }, []);
 
   const composePrayer = useCallback(async (text: string) => {
     if (!text.trim()) return;
@@ -84,7 +101,7 @@ export default function IntentionScreen() {
         }
       }
     } catch {
-      Alert.alert("Error", "Could not compose the prayer. Please try again.");
+      setService("connect");
       setStage("input");
     } finally {
       setStreaming(false);
@@ -108,6 +125,10 @@ export default function IntentionScreen() {
     setPrayerText("");
     setSaved(false);
   }, []);
+
+  if (service !== "ready") {
+    return <ServiceConnect title="Compose a prayer" onBack={() => router.back()} />;
+  }
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: C.surfaceDeep }}>
