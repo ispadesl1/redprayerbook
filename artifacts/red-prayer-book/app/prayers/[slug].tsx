@@ -10,6 +10,7 @@ import {
   recordPrayerRead,
   removePrayerBookmark,
 } from "@/lib/db";
+import { goBack } from "@/lib/navigation";
 import { getAllPrayers, getPrayerBySlug, PRAYER_SECTIONS, type Prayer } from "@/lib/prayers";
 import { usePrefs } from "@/lib/prefs";
 import { layout } from "@/theme/spacing";
@@ -84,7 +85,7 @@ export default function PrayerDetail() {
           paddingHorizontal: 8,
         }}
       >
-        <Pressable onPress={() => router.back()} style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 8, flex: 1 }}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={goBack} style={{ minHeight: 44, justifyContent: "center", paddingHorizontal: 8, flex: 1 }}>
           <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }} numberOfLines={1}>
             ‹ {section?.title ?? "Prayers"}
           </Text>

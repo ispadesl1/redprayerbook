@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { usePalette } from "@/hooks/usePalette";
 import { useFrame } from "@/components/ui/manuscript";
-import { addHighlight, listHighlights } from "@/lib/db";
+import { addHighlight, listHighlights, recordBibleChapter } from "@/lib/db";
 import { incrementBadge } from "@/lib/badges";
 import { BIBLE_SECTIONS, getBookById, type BibleBook } from "@/lib/bible-structure";
 import { fetchChapter, searchBibleCache, type BibleChapter, type SearchResult } from "@/lib/bible-fetch";
@@ -85,6 +85,7 @@ export default function Bible() {
       const data = await fetchChapter(bookId, chapter);
       setChapterData(data);
       await loadHighlights(bookId, chapter);
+      await recordBibleChapter(bookId, chapter);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load chapter");
     } finally {

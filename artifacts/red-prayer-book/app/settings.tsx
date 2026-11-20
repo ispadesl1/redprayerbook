@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, Text, TextInput, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSequence, withTiming } from "react-native-reanimated";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ManuscriptScroll, SmallCaps, StackBar, focusRing, onSpaceKey } from "@/components/ui/manuscript";
+import { EaseModal, ManuscriptScroll, SmallCaps, StackBar, focusRing, onSpaceKey } from "@/components/ui/manuscript";
 import { usePalette } from "@/hooks/usePalette";
 import { CALENDAR_CREDIT } from "@/lib/calendar";
 import {
@@ -12,6 +13,7 @@ import {
   type NotifSettings,
 } from "@/lib/notifications";
 import { usePrefs } from "@/lib/prefs";
+import { EASE_OUT } from "@/theme/motion";
 import { fonts } from "@/theme/typography";
 
 type ReminderKey = "morning" | "midday" | "evening";
@@ -87,6 +89,8 @@ export default function Settings() {
   const setDisplayName = usePrefs((state) => state.setDisplayName);
   const [nameDraft, setNameDraft] = useState(displayName);
   const [nameFocused, setNameFocused] = useState(false);
+  const savedOpacity = useSharedValue(0);
+  const savedStyle = useAnimatedStyle(() => ({ opacity: savedOpacity.value }));
   const [settings, setSettings] = useState<NotifSettings | null>(null);
   const [picker, setPicker] = useState<ReminderKey | null>(null);
   const [hour, setHour] = useState(7);
@@ -164,7 +168,13 @@ export default function Settings() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Save name"
-          onPress={() => setDisplayName(nameDraft)}
+          onPress={() => {
+            setDisplayName(nameDraft);
+            savedOpacity.value = withSequence(
+              withTiming(1, { duration: 150, easing: EASE_OUT }),
+              withDelay(2000, withTiming(0, { duration: 150, easing: EASE_OUT })),
+            );
+          }}
           style={(state) => ({
             minHeight: 44,
             justifyContent: "center",
@@ -174,6 +184,9 @@ export default function Settings() {
         >
           <Text style={{ color: C.rubric, fontFamily: fonts.semibold, fontSize: 18 }}>Save name</Text>
         </Pressable>
+        <Animated.Text style={[{ fontFamily: fonts.italic, fontSize: 16, color: C.ink2, marginTop: 4 }, savedStyle]}>
+          Saved
+        </Animated.Text>
 
         <View style={{ marginTop: 28 }}>
         <SmallCaps>Appearance</SmallCaps>
@@ -220,11 +233,18 @@ export default function Settings() {
 
         <View style={{ marginTop: 28 }}>
           <SmallCaps>Calendar</SmallCaps>
-          <View style={{ flexDirection: "row", gap: 18, marginTop: 8 }}>
+          <View accessibilityRole="radiogroup" style={{ flexDirection: "row", gap: 18, marginTop: 8 }}>
             {(["new", "old"] as const).map((item) => {
               const on = calendarStyle === item;
               return (
-                <Pressable key={item} onPress={() => setCalendarStyle(item)} style={{ minHeight: 44, justifyContent: "center" }}>
+                <Pressable
+                  key={item}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on, checked: on }}
+                  aria-checked={on}
+                  onPress={() => setCalendarStyle(item)}
+                  style={{ minHeight: 44, justifyContent: "center" }}
+                >
                   <Text
                     style={{
                       fontFamily: fonts.medium,
@@ -256,11 +276,11 @@ export default function Settings() {
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: C.rule, paddingVertical: 8 }}>
             <Text style={{ flex: 1, fontFamily: fonts.regular, fontSize: 18, color: C.ink }}>Prayer text size</Text>
-            <Pressable accessibilityLabel="Smaller text" onPress={() => setReadStep(readStep - 1)} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
-              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 16, lineHeight: 20 }}>A</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Decrease prayer text size" onPress={() => setReadStep(readStep - 1)} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 16, lineHeight: 20 }}>A−</Text>
             </Pressable>
-            <Pressable accessibilityLabel="Larger text" onPress={() => setReadStep(readStep + 1)} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
-              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 22, lineHeight: 26 }}>A</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Increase prayer text size" onPress={() => setReadStep(readStep + 1)} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 22, lineHeight: 26 }}>A+</Text>
             </Pressable>
           </View>
         </View>
@@ -274,24 +294,23 @@ export default function Settings() {
         </View>
       </ManuscriptScroll>
 
-      <Modal visible={!!picker} transparent animationType="fade" onRequestClose={() => setPicker(null)}>
-        <Pressable style={{ flex: 1, backgroundColor: C.scrim }} onPress={() => setPicker(null)} />
+      <EaseModal visible={!!picker} onClose={() => setPicker(null)}>
         <View style={{ backgroundColor: C.paper, padding: 24, paddingBottom: insets.bottom + 24 }}>
           <Text style={{ fontFamily: fonts.medium, fontSize: 22, color: C.ink, textAlign: "center" }}>
             {fmt12(hour, minute)}
           </Text>
           <View style={{ flexDirection: "row", justifyContent: "center", gap: 24, marginVertical: 16 }}>
-            <Pressable onPress={() => setHour((value) => (value + 23) % 24)} style={{ padding: 8 }}>
-              <Text style={{ color: C.rubric, fontSize: 18 }}>Hour −</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Earlier hour" onPress={() => setHour((value) => (value + 23) % 24)} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Hour −</Text>
             </Pressable>
-            <Pressable onPress={() => setHour((value) => (value + 1) % 24)} style={{ padding: 8 }}>
-              <Text style={{ color: C.rubric, fontSize: 18 }}>Hour +</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Later hour" onPress={() => setHour((value) => (value + 1) % 24)} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Hour +</Text>
             </Pressable>
-            <Pressable onPress={() => setMinute((value) => (value + 45) % 60)} style={{ padding: 8 }}>
-              <Text style={{ color: C.rubric, fontSize: 18 }}>Min −</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Earlier minutes" onPress={() => setMinute((value) => (value + 45) % 60)} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Min −</Text>
             </Pressable>
-            <Pressable onPress={() => setMinute((value) => (value + 15) % 60)} style={{ padding: 8 }}>
-              <Text style={{ color: C.rubric, fontSize: 18 }}>Min +</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Later minutes" onPress={() => setMinute((value) => (value + 15) % 60)} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Min +</Text>
             </Pressable>
           </View>
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
@@ -303,7 +322,7 @@ export default function Settings() {
             </Pressable>
           </View>
         </View>
-      </Modal>
+      </EaseModal>
     </View>
   );
 }

@@ -14,7 +14,8 @@ import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ServiceConnect } from "@/components/ServiceConnect";
 import { usePalette } from "@/hooks/usePalette";
-import { apiBase, probeService, type ServiceState } from "@/lib/service";
+import { goBack } from "@/lib/navigation";
+import { apiBase, probeService, responseIsUnconfigured, type ServiceState } from "@/lib/service";
 import { fonts } from "@/theme/typography";
 import { spacing } from "@/theme/spacing";
 
@@ -25,6 +26,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   streaming?: boolean;
+  failed?: boolean;
 }
 
 interface Conversation {
@@ -60,11 +62,15 @@ export default function CompanionScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: "Spiritual Companion Chat" }),
       });
-      if (!res.ok) throw new Error("Failed to start conversation");
+      if (!res.ok) {
+        if (await responseIsUnconfigured(res)) setService("connect");
+        else setConversation(null);
+        return;
+      }
       const conv: Conversation = await res.json();
       setConversation(conv);
     } catch {
-      setService("connect");
+      setConversation(null);
     } finally {
       setInitializing(false);
     }
@@ -126,7 +132,13 @@ export default function CompanionScreen() {
           }
         );
 
-        if (!res.ok || !res.body) throw new Error("Stream failed");
+        if (!res.ok || !res.body) {
+          if (await responseIsUnconfigured(res)) {
+            setService("connect");
+            return;
+          }
+          throw new Error("Stream failed");
+        }
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -165,13 +177,7 @@ export default function CompanionScreen() {
       } catch {
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === streamingId
-              ? {
-                  ...m,
-                  content: "Glory to God. I encountered a difficulty — please try again.",
-                  streaming: false,
-                }
-              : m
+            m.id === streamingId ? { ...m, content: "", streaming: false, failed: true } : m
           )
         );
       } finally {
@@ -199,18 +205,32 @@ export default function CompanionScreen() {
           <Text style={{ fontFamily: fonts.medium, fontSize: 14, lineHeight: 18, color: C.rubric, fontVariant: ["small-caps"], letterSpacing: 0.4 }}>
             {isUser ? "You" : "Companion"}
           </Text>
+          {item.failed ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Try again"
+              onPress={() => {
+                const index = messages.findIndex((entry) => entry.id === item.id);
+                const previous = messages.slice(0, index).reverse().find((entry) => entry.role === "user");
+                if (previous) sendMessage(previous.content);
+              }}
+              style={{ minHeight: 44, justifyContent: "center", marginTop: 4 }}
+            >
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+            </Pressable>
+          ) : (
           <Text style={{ color: C.ink, fontFamily: fonts.regular, fontSize: 18, lineHeight: 28, marginTop: 4 }}>
             {item.content}
             {item.streaming ? <Text style={{ fontFamily: fonts.regular, color: C.rubric }}> ▌</Text> : null}
           </Text>
+          )}
         </View>
       </View>
     );
   };
 
-  if (service !== "ready") {
-    return <ServiceConnect title="Companion" onBack={() => router.back()} />;
-  }
+  if (service === "checking") return <ServiceConnect title="Companion" checking />;
+  if (service !== "ready") return <ServiceConnect title="Companion" />;
 
   if (initializing) {
     return (
@@ -239,8 +259,9 @@ export default function CompanionScreen() {
         }}
       >
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel="Back"
-          onPress={() => router.back()}
+          onPress={goBack}
           style={({ pressed }) => ({ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.6 : 1 })}
         >
           <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 22, lineHeight: 26 }}>‹</Text>
@@ -250,7 +271,7 @@ export default function CompanionScreen() {
             Companion
           </Text>
           <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 16, lineHeight: 22 }}>
-            The service is not available in this build
+            Ask, and a reply is composed here
           </Text>
         </View>
       </View>
@@ -269,8 +290,21 @@ export default function CompanionScreen() {
                 Glory to God for all things
               </Text>
               <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, textAlign: "center", marginTop: 10 }}>
-                Ask about prayers, the saints, fasting, or the sacraments. The companion needs a service that is not running here.
+                Ask about prayers, the saints, fasting, or the sacraments.
               </Text>
+              {!conversation && !initializing ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Try again"
+                  onPress={() => {
+                    setInitializing(true);
+                    startConversation();
+                  }}
+                  style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}
+                >
+                  <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+                </Pressable>
+              ) : null}
             </View>
             <View style={{ paddingHorizontal: 22 }}>
               <Text style={{ color: C.rubric, fontFamily: fonts.medium, fontSize: 16, lineHeight: 22, fontVariant: ["small-caps"], letterSpacing: 0.6, marginBottom: 4 }}>

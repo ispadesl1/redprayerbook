@@ -28,7 +28,7 @@ export function DayEntry({ date, style, day, loading, failed, textFailed, onRetr
       : `${WEEKDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS[date.getMonth()]}`;
 
   return (
-    <FadeInBlock token={`${date.toDateString()}-${style}-${heading}`}>
+    <FadeInBlock token={`${date.toDateString()}-${style}`}>
       <View style={{ marginTop: 26, borderTopWidth: 1, borderTopColor: C.rule2, paddingTop: 18 }}>
         <SmallCaps size={15}>{church}</SmallCaps>
         <View style={{ minHeight: 64, marginTop: 6 }}>

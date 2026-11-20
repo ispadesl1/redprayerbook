@@ -17,7 +17,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ServiceConnect } from "@/components/ServiceConnect";
 import { usePalette } from "@/hooks/usePalette";
 import { savePrayerIntention } from "@/lib/db";
-import { apiBase, probeService, type ServiceState } from "@/lib/service";
+import { goBack } from "@/lib/navigation";
+import { apiBase, probeService, responseIsUnconfigured, type ServiceState } from "@/lib/service";
 import { fonts } from "@/theme/typography";
 import { spacing } from "@/theme/spacing";
 
@@ -43,6 +44,7 @@ export default function IntentionScreen() {
   const [saved, setSaved] = useState(false);
   const [inputFocused, setInputFocused] = useState(true);
   const [service, setService] = useState<ServiceState>(apiBase() ? "checking" : "connect");
+  const [composeFailed, setComposeFailed] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -65,6 +67,7 @@ export default function IntentionScreen() {
     setPrayerText("");
     setStreaming(true);
     setSaved(false);
+    setComposeFailed(false);
 
     try {
       const res = await fetch(`${API_BASE}/anthropic/compose-prayer`, {
@@ -73,7 +76,15 @@ export default function IntentionScreen() {
         body: JSON.stringify({ intention: text.trim() }),
       });
 
-      if (!res.ok || !res.body) throw new Error("Stream failed");
+      if (!res.ok || !res.body) {
+        if (await responseIsUnconfigured(res)) {
+          setService("connect");
+        } else {
+          setComposeFailed(true);
+        }
+        setStage("input");
+        return;
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -101,7 +112,7 @@ export default function IntentionScreen() {
         }
       }
     } catch {
-      setService("connect");
+      setComposeFailed(true);
       setStage("input");
     } finally {
       setStreaming(false);
@@ -126,9 +137,8 @@ export default function IntentionScreen() {
     setSaved(false);
   }, []);
 
-  if (service !== "ready") {
-    return <ServiceConnect title="Compose a prayer" onBack={() => router.back()} />;
-  }
+  if (service === "checking") return <ServiceConnect title="Compose a prayer" checking />;
+  if (service !== "ready") return <ServiceConnect title="Compose a prayer" />;
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: C.surfaceDeep }}>
@@ -145,8 +155,9 @@ export default function IntentionScreen() {
         }}
       >
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel="Back"
-          onPress={() => router.back()}
+          onPress={goBack}
           style={({ pressed }) => ({ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.6 : 1 })}
         >
           <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 22, lineHeight: 26 }}>‹</Text>
@@ -155,7 +166,7 @@ export default function IntentionScreen() {
           <Text style={{ color: C.ink, fontFamily: fonts.medium, fontSize: 22, lineHeight: 28 }}>
             Compose a prayer
           </Text>
-          <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 16, lineHeight: 22 }}>Needs the companion service</Text>
+          <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 16, lineHeight: 22 }}>For what you are carrying</Text>
         </View>
         {stage === "result" && (
           <Pressable
@@ -184,7 +195,7 @@ export default function IntentionScreen() {
                 What is on your heart?
               </Text>
               <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, textAlign: "center", marginTop: 8 }}>
-                Write an intention. A composed prayer needs the service, which is not running here.
+                Write an intention, and a prayer is composed from it.
               </Text>
             </View>
 
@@ -236,6 +247,16 @@ export default function IntentionScreen() {
                 Compose Prayer
               </Text>
             </Pressable>
+            {composeFailed ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Try again"
+                onPress={() => composePrayer(intention)}
+                style={{ minHeight: 44, justifyContent: "center", alignItems: "center", marginBottom: spacing.m }}
+              >
+                <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+              </Pressable>
+            ) : null}
 
             {/* Examples */}
             <Text style={{ color: C.rubric, fontFamily: fonts.medium, fontSize: 16, lineHeight: 22, fontVariant: ["small-caps"], letterSpacing: 0.6, marginBottom: 4 }}>

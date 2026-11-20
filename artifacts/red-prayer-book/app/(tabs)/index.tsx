@@ -16,10 +16,10 @@ import {
 import { useLiturgicalDay } from "@/hooks/useCalendarData";
 import { usePalette } from "@/hooks/usePalette";
 import { useToday } from "@/hooks/useToday";
-import { BADGE_DEFS, getAllBadgeProgress, incrementBadge } from "@/lib/badges";
+import { badgeProgressForDisplay, getAllBadgeProgress, vespersDays, visibleBadgeDefs } from "@/lib/badges";
 import { fastLines, formatCivilDate, saintOfTheDay, seasonOfTheDay, type LiturgicalDay } from "@/lib/calendar";
 import { CANONICAL_HOURS, getCurrentHour, type CanonicalHour } from "@/lib/canonicalHours";
-import { recordStreakToday } from "@/lib/db";
+import { getStreakData, recordStreakToday } from "@/lib/db";
 import { getPrayerBySlug } from "@/lib/prayers";
 import { isHourKept, localYmd, usePrefs } from "@/lib/prefs";
 import { fonts } from "@/theme/typography";
@@ -222,10 +222,10 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       await recordStreakToday();
-      await incrementBadge("daily_prayers", 1);
-      setBadges(await getAllBadgeProgress());
+      const [stored, streak] = await Promise.all([getAllBadgeProgress(), getStreakData()]);
+      setBadges(badgeProgressForDisplay(stored, { streak: streak.currentStreak, vespersDays: vespersDays(checks) }));
     })();
-  }, []);
+  }, [checks]);
 
   const dayQuery = useLiturgicalDay(today, style);
 
@@ -351,7 +351,7 @@ export default function Home() {
       <Ornament />
       <SmallCaps>Badges</SmallCaps>
       <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
-        {BADGE_DEFS.slice(0, 5).map((def) => (
+        {visibleBadgeDefs(badges).slice(0, 5).map((def) => (
           <BadgeItem key={def.id} def={def} progress={badges[def.id] ?? 0} size={72} onPress={() => router.push("/you" as never)} />
         ))}
       </View>

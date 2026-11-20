@@ -20,7 +20,28 @@ export const BADGE_DEFS: BadgeDef[] = [
   { id: 'vespers', label: 'Vespers', description: 'Complete 20 Vespers prayers', max: 20, color: '#4A2C4E', mciIcon: 'candle' },
 ];
 
+const HIDDEN_UNTIL_RECORDED = new Set(["notes", "days_fasted"]);
+
 const KEY = (id: string) => `rpb:badge:${id}`;
+
+export function vespersDays(checks: Record<string, string[]>): number {
+  return Object.values(checks).filter((ids) => ids.includes("vespers")).length;
+}
+
+export function badgeProgressForDisplay(
+  stored: Record<string, number>,
+  extras: { streak: number; vespersDays: number },
+): Record<string, number> {
+  return {
+    ...stored,
+    streak: Math.min(30, Math.max(0, extras.streak)),
+    vespers: Math.min(20, Math.max(0, extras.vespersDays)),
+  };
+}
+
+export function visibleBadgeDefs(progress: Record<string, number>): BadgeDef[] {
+  return BADGE_DEFS.filter((def) => !HIDDEN_UNTIL_RECORDED.has(def.id) || (progress[def.id] ?? 0) > 0);
+}
 
 export async function getBadgeProgress(id: string): Promise<number> {
   try {

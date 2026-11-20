@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { incrementBadge } from '@/lib/badges';
 
 type Bookmark = { id: string; page_index: number; label: string | null; created_at: number };
 type Highlight = { id: string; book: string; chapter: number; verse: number; color: string; created_at: number };
@@ -33,6 +34,7 @@ const KEYS = {
   prayerBookmarks: 'rpb:prayer_bookmarks',
   prayerReads: 'rpb:prayer_reads',
   activity: 'rpb:activity',
+  bibleChapters: 'rpb:bible_chapters',
 };
 
 export type ActivityKind = 'prayer' | 'hour' | 'highlight' | 'bookmark';
@@ -164,9 +166,22 @@ export async function getStreakData(): Promise<StreakData> {
 export async function recordPrayerRead(slug: string, title?: string): Promise<void> {
   const reads = await read<PrayerRead>(KEYS.prayerReads);
   const date = todayStr();
-  reads.unshift({ slug, date, timestamp: Date.now() });
-  await write(KEYS.prayerReads, reads);
+  const already = reads.some((item) => item.slug === slug && item.date === date);
+  if (!already) {
+    reads.unshift({ slug, date, timestamp: Date.now() });
+    await write(KEYS.prayerReads, reads);
+    await incrementBadge('daily_prayers');
+  }
   if (title) await recordActivity('prayer', `Read ${title}`, `prayer:${slug}:${date}`);
+}
+
+export async function recordBibleChapter(bookId: string, chapter: number): Promise<void> {
+  const key = `${bookId}:${chapter}`;
+  const seen = await read<string>(KEYS.bibleChapters);
+  if (seen.includes(key)) return;
+  seen.push(key);
+  await write(KEYS.bibleChapters, seen);
+  await incrementBadge('whole_bible');
 }
 
 export async function getPrayerReadCount(): Promise<number> {

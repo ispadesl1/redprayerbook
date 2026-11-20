@@ -21,6 +21,16 @@ export function apiBase(): string | null {
   return withApiPath(domain);
 }
 
+export async function responseIsUnconfigured(response: Response): Promise<boolean> {
+  if (response.status !== 503) return false;
+  try {
+    const body = (await response.clone().json()) as { error?: string };
+    return body.error === "unconfigured";
+  } catch {
+    return false;
+  }
+}
+
 export async function probeService(timeoutMs = 4000): Promise<Exclude<ServiceState, "checking">> {
   const base = apiBase();
   if (!base) return "connect";

@@ -2,6 +2,7 @@ import { Linking, Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { focusRing, ManuscriptScroll } from "@/components/ui/manuscript";
 import { usePalette } from "@/hooks/usePalette";
+import { goBack } from "@/lib/navigation";
 import { SERVICE_README } from "@/lib/service";
 import { fonts } from "@/theme/typography";
 
@@ -14,10 +15,10 @@ const STEPS = [
 
 export function ServiceConnect({
   title,
-  onBack,
+  checking = false,
 }: {
   title: string;
-  onBack: () => void;
+  checking?: boolean;
 }) {
   const C = usePalette();
   const insets = useSafeAreaInsets();
@@ -37,7 +38,7 @@ export function ServiceConnect({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Back"
-          onPress={onBack}
+          onPress={goBack}
           style={(state) => ({
             minWidth: 44,
             minHeight: 44,
@@ -52,6 +53,13 @@ export function ServiceConnect({
       </View>
       <ManuscriptScroll>
         <Text style={{ textAlign: "center", color: C.rubric, fontFamily: fonts.regular, fontSize: 22, lineHeight: 28 }}>✠</Text>
+        {checking ? (
+          <Text style={{ fontFamily: fonts.italic, fontSize: 20, lineHeight: 30, color: C.ink2, textAlign: "center", marginTop: 28 }}>
+            Checking…
+          </Text>
+        ) : null}
+        {!checking ? (
+        <>
         <Text style={{ fontFamily: fonts.medium, fontSize: 32, lineHeight: 38, color: C.ink, textAlign: "center", marginTop: 16 }}>
           Connect the service
         </Text>
@@ -78,6 +86,8 @@ export function ServiceConnect({
         >
           <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>The setup steps are in the README ›</Text>
         </Pressable>
+        </>
+        ) : null}
       </ManuscriptScroll>
     </View>
   );

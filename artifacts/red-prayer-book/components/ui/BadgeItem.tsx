@@ -21,6 +21,8 @@ export function BadgeItem({ def, progress, size = 68, onPress }: Props) {
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${def.label}, ${progress} of ${def.max}`}
       onPress={onPress}
       style={({ pressed }) => ({
         alignItems: "center",

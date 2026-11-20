@@ -83,10 +83,8 @@ export default function RootLayout() {
     const finish = () => usePrefs.setState({ hydrated: true });
     const unsub = usePrefs.persist.onFinishHydration(finish);
     if (usePrefs.persist.hasHydrated()) finish();
-    const fallback = setTimeout(finish, 1500);
     return () => {
       unsub();
-      clearTimeout(fallback);
     };
   }, []);
 

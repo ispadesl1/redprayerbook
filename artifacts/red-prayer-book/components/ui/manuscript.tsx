@@ -1,5 +1,6 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import {
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +14,7 @@ import {
 import * as Haptics from "expo-haptics";
 import Animated, {
   Easing,
+  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -21,6 +23,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { usePalette } from "@/hooks/usePalette";
+import { goBack } from "@/lib/navigation";
 import { fonts } from "@/theme/typography";
 import { layout } from "@/theme/spacing";
 import { EASE_OUT, motion } from "@/theme/motion";
@@ -124,6 +127,7 @@ export function IconPress({
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
     <Pressable
+      accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={pressed == null ? undefined : { selected: pressed }}
       onPress={onPress}
@@ -296,11 +300,11 @@ export function HourCheck({
   const C = usePalette();
   const { reduced } = useMotion();
   const opacity = useSharedValue(checked ? 1 : 0);
-  const scale = useSharedValue(checked ? 1 : 0.7);
+  const scale = useSharedValue(checked ? 1 : 0.9);
   useEffect(() => {
-    const ms = reduced ? 0 : 220;
+    const ms = reduced ? 0 : 200;
     opacity.value = withTiming(checked ? 1 : 0, { duration: ms, easing: EASE_OUT });
-    scale.value = withTiming(checked ? 1 : 0.7, { duration: ms, easing: EASE_OUT });
+    scale.value = withTiming(checked ? 1 : 0.9, { duration: ms, easing: EASE_OUT });
   }, [checked, reduced, opacity, scale]);
   const mark = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -361,19 +365,47 @@ export function HourCheck({
 export function FadeInBlock({ children, token }: { children: ReactNode; token: string }) {
   const { reduced } = useMotion();
   const opacity = useSharedValue(0);
-  const translateY = useSharedValue(4);
   useEffect(() => {
-    const ms = reduced ? 0 : motion.fade;
     opacity.value = 0;
-    translateY.value = 4;
-    opacity.value = withTiming(1, { duration: ms, easing: EASE_OUT });
-    translateY.value = withTiming(0, { duration: ms, easing: EASE_OUT });
-  }, [token, reduced, opacity, translateY]);
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
+    opacity.value = withTiming(1, { duration: reduced ? 0 : 150, easing: EASE_OUT });
+  }, [token, reduced, opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return <Animated.View style={style}>{children}</Animated.View>;
+}
+
+export function EaseModal({
+  visible,
+  onClose,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const C = usePalette();
+  const reduced = useReducedMotion();
+  const opacity = useSharedValue(0);
+  const [mounted, setMounted] = useState(visible);
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      opacity.value = withTiming(1, { duration: reduced ? 0 : 200, easing: EASE_OUT });
+      return;
+    }
+    opacity.value = withTiming(0, { duration: reduced ? 0 : 200, easing: EASE_OUT }, (finished) => {
+      if (finished) runOnJS(setMounted)(false);
+    });
+  }, [visible, reduced, opacity]);
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  if (!mounted) return null;
+  return (
+    <Modal transparent visible animationType="none" onRequestClose={onClose}>
+      <Animated.View style={[{ flex: 1, justifyContent: "flex-end" }, style]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" style={{ flex: 1, backgroundColor: C.scrim }} onPress={onClose} />
+        {children}
+      </Animated.View>
+    </Modal>
+  );
 }
 
 function ManuscriptBody({
@@ -483,7 +515,7 @@ export function StackBar({
       }}
     >
       {onBack ? (
-        <IconPress onPress={onBack} label="Back">
+        <IconPress onPress={goBack} label="Back">
           <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>‹ Back</Text>
         </IconPress>
       ) : (

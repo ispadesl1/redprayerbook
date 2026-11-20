@@ -167,21 +167,17 @@ export function dayHeading(day: LiturgicalDay): string {
   return "";
 }
 
-const SEASON_LABEL = /forefeast|afterfeast|leavetaking|leave-taking|apodosis|midfeast|prefeast|^begin\b|nativity fast|lenten fast|apostles fast|dormition fast/i;
+const SEASON_LABEL = /forefeast|afterfeast|leavetaking|leave-taking|apodosis|midfeast|prefeast|^begin(?:ning)?\b|^sunday of\b|nativity fast|lenten fast|apostles fast|dormition fast|pentecostarion/i;
 
 export function isSeasonLabel(name: string): boolean {
   return SEASON_LABEL.test(name);
 }
 
 export function saintOfTheDay(day: LiturgicalDay): string {
-  const personFeast = day.feasts.find((name) => !isSeasonLabel(name));
-  if (personFeast && /Nicholas.*(Myra|Wonderworker)|Wonderworker.*Nicholas/i.test(personFeast)) {
-    return personFeast;
-  }
+  const feast = day.feasts.find((name) => !isSeasonLabel(name));
+  if (feast) return feast;
   const saint = day.saints.find((name) => !isSeasonLabel(name));
-  if (saint) return saint;
-  if (personFeast) return personFeast;
-  return "";
+  return saint ?? "";
 }
 
 const LIFE_STOP = new Set([
@@ -215,13 +211,29 @@ function lifeTokens(value: string): string[] {
     .filter((word) => word.length > 2 && !LIFE_STOP.has(word));
 }
 
+function placesOf(value: string): Set<string> {
+  const places = new Set<string>();
+  const re = /\bof (?:the )?([a-z][a-z'-]*)/gi;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(value.toLowerCase()))) places.add(match[1]);
+  return places;
+}
+
+function placesConflict(name: string, title: string): boolean {
+  const wanted = placesOf(name);
+  const have = placesOf(title);
+  if (wanted.size === 0 || have.size === 0) return false;
+  for (const place of wanted) if (have.has(place)) return false;
+  return true;
+}
+
 /** Match an orthocal story title to a commemorated name. No story is invented. */
 export function lifeForName(stories: SaintStory[], name: string): SaintStory | null {
   const wanted = lifeTokens(name);
   if (wanted.length === 0) return null;
   let best: { story: SaintStory; score: number } | null = null;
   for (const story of stories) {
-    if (!story.story) continue;
+    if (!story.story || placesConflict(name, story.title)) continue;
     const have = new Set(lifeTokens(story.title));
     const score = wanted.filter((word) => have.has(word)).length;
     if (score === 0) continue;
