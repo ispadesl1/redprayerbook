@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ManuscriptScroll, Ornament, ReadingText, SmallCaps, StackBar } from "@/components/ui/manuscript";
 import { useLiturgicalDay } from "@/hooks/useCalendarData";
 import { usePalette } from "@/hooks/usePalette";
-import { lifeForName, saintOfTheDay, CALENDAR_CREDIT, MONTHS } from "@/lib/calendar";
+import { commemorationLabel, lifeForName, saintOfTheDay, CALENDAR_CREDIT, MONTHS } from "@/lib/calendar";
 import { usePrefs } from "@/lib/prefs";
 import { fonts } from "@/theme/typography";
 
@@ -32,6 +32,7 @@ export default function SaintDetail() {
     <View style={{ flex: 1, backgroundColor: C.paper }}>
       <StackBar title="Lives of the Saints" onBack={() => router.back()} />
       <ManuscriptScroll>
+        <SmallCaps>{requested ? commemorationLabel(requested) : "Saint of the day"}</SmallCaps>
         <SmallCaps>
           {date.getDate()} {MONTHS[date.getMonth()]} {date.getFullYear()}
         </SmallCaps>

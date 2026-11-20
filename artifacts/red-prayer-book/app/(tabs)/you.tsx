@@ -1,10 +1,13 @@
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
+import { useLiturgicalDay } from "@/hooks/useCalendarData";
+import { useToday } from "@/hooks/useToday";
 import { BadgeItem } from "@/components/ui/BadgeItem";
 import { EaseModal, ManuscriptScroll, Ornament, SmallCaps, TocRow } from "@/components/ui/manuscript";
 import { usePalette } from "@/hooks/usePalette";
 import { BADGE_DEFS, badgeProgressForDisplay, getAllBadgeProgress, vespersDays, visibleBadgeDefs } from "@/lib/badges";
+import { commemorationLabel, saintOfTheDay } from "@/lib/calendar";
 import { getStreakData, listActivity, recordStreakToday, type ActivityEntry, type StreakData } from "@/lib/db";
 import { usePrefs } from "@/lib/prefs";
 import { fonts } from "@/theme/typography";
@@ -28,6 +31,11 @@ export default function You() {
   const C = usePalette();
   const displayName = usePrefs((state) => state.displayName);
   const checks = usePrefs((state) => state.ruleChecks);
+  const calendarStyle = usePrefs((state) => state.calendarStyle);
+  const today = useToday();
+  const dayQuery = useLiturgicalDay(today, calendarStyle);
+  const todayName = dayQuery.data ? saintOfTheDay(dayQuery.data) : "";
+  const todayLabel = todayName ? commemorationLabel(todayName) : "Saint of the day";
   const [streak, setStreak] = useState<StreakData>({
     currentStreak: 0,
     longestStreak: 0,
@@ -80,7 +88,7 @@ export default function You() {
         <TocRow title="Spiritual companion" subtitle="Needs the companion service" page="›" onPress={() => router.push("/companion" as never)} />
         <TocRow title="Bookmarks" page="›" onPress={() => router.push("/bookmarks" as never)} />
         <TocRow title="Prayers" page="›" onPress={() => router.push("/prayers" as never)} />
-        <TocRow title="Saint of the day" page="›" onPress={() => router.push("/saints/today" as never)} />
+        <TocRow title={todayLabel} page="›" onPress={() => router.push("/saints/today" as never)} />
         <Ornament />
         <SmallCaps>{visibleBadgeDefs(badges).length} badges</SmallCaps>
         <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, Modal, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform } from "react-native";
+import { EaseModal } from "@/components/ui/manuscript";
 import { usePalette } from "@/hooks/usePalette";
 import { fonts } from "@/theme/typography";
 
@@ -22,8 +23,7 @@ export function PageJumpSheet({ totalPages, currentIndex, onJump, visible, onClo
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={{ flex: 1, backgroundColor: C.scrim }} onPress={onClose} />
+    <EaseModal visible={visible} onClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <View style={{ backgroundColor: C.paper, borderTopWidth: 1, borderColor: C.rule, padding: 24, paddingBottom: 36 }}>
           <Text style={{ fontFamily: fonts.medium, fontSize: 22, color: C.ink, textAlign: "center", marginBottom: 18 }}>
@@ -65,6 +65,6 @@ export function PageJumpSheet({ totalPages, currentIndex, onJump, visible, onClo
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </EaseModal>
   );
 }

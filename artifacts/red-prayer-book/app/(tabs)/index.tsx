@@ -17,7 +17,7 @@ import { useLiturgicalDay } from "@/hooks/useCalendarData";
 import { usePalette } from "@/hooks/usePalette";
 import { useToday } from "@/hooks/useToday";
 import { badgeProgressForDisplay, getAllBadgeProgress, vespersDays, visibleBadgeDefs } from "@/lib/badges";
-import { fastLines, formatCivilDate, saintOfTheDay, seasonOfTheDay, type LiturgicalDay } from "@/lib/calendar";
+import { commemorationLabel, fastLines, formatCivilDate, saintOfTheDay, seasonOfTheDay, type LiturgicalDay } from "@/lib/calendar";
 import { CANONICAL_HOURS, getCurrentHour, type CanonicalHour } from "@/lib/canonicalHours";
 import { getStreakData, recordStreakToday } from "@/lib/db";
 import { getPrayerBySlug } from "@/lib/prayers";
@@ -172,7 +172,7 @@ function SaintPlate({
   const showIcon = isWonderworker(name);
   return (
     <View style={{ width: 156, minHeight: 140 }}>
-      <SmallCaps size={14}>Saint of the day</SmallCaps>
+      <SmallCaps size={14}>{name ? commemorationLabel(name) : "Saint of the day"}</SmallCaps>
       {showIcon ? (
         <View style={{ marginTop: 8 }}>
           <Image

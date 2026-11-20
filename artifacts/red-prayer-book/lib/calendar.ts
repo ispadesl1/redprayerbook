@@ -167,7 +167,7 @@ export function dayHeading(day: LiturgicalDay): string {
   return "";
 }
 
-const SEASON_LABEL = /forefeast|afterfeast|leavetaking|leave-taking|apodosis|midfeast|prefeast|^begin(?:ning)?\b|^sunday of\b|nativity fast|lenten fast|apostles fast|dormition fast|pentecostarion/i;
+const SEASON_LABEL = /forefeast|afterfeast|leavetaking|leave-taking|apodosis|midfeast|prefeast|^begin(?:ning)?\b|^sunday of\b|nativity fast|lenten fast|apostles fast|dormition fast|pentecostarion|^(?:saturday|sunday) (?:before|after)\b|memorial|forgiveness sunday|radonitsa|third day of|day of the holy spirit|great canon|akathist|presanctified|^(?:paralytic|blind man|samaritan woman|myrrhbearing women)$/i;
 
 export function isSeasonLabel(name: string): boolean {
   return SEASON_LABEL.test(name);
@@ -178,6 +178,16 @@ export function saintOfTheDay(day: LiturgicalDay): string {
   if (feast) return feast;
   const saint = day.saints.find((name) => !isSeasonLabel(name));
   return saint ?? "";
+}
+
+const LORDLY_FEAST = /\b(lord|christ|theotokos|resurrection|nativity|theophany|pentecost|ascension|cross|transfiguration|entry|meeting|annunciation|dormition)\b/i;
+
+export function isFeastOfTheDay(name: string): boolean {
+  return LORDLY_FEAST.test(name);
+}
+
+export function commemorationLabel(name: string): string {
+  return isFeastOfTheDay(name) ? "Feast of the day" : "Saint of the day";
 }
 
 const LIFE_STOP = new Set([
@@ -195,6 +205,7 @@ const LIFE_STOP = new Set([
   "ven",
   "martyr",
   "hieromartyr",
+  "protomartyr",
   "new",
   "archbishop",
   "abp",
@@ -211,11 +222,40 @@ function lifeTokens(value: string): string[] {
     .filter((word) => word.length > 2 && !LIFE_STOP.has(word));
 }
 
+const PLACE_SKIP = new Set([
+  "most",
+  "our",
+  "st",
+  "saint",
+  "lord",
+  "christ",
+  "god",
+  "holy",
+  "glorious",
+  "venerable",
+  "illustrious",
+  "chief",
+  "twelve",
+  "all",
+  "heavenly",
+  "bodiless",
+  "prophet",
+  "apostle",
+  "precious",
+  "head",
+  "flesh",
+  "image",
+]);
+
 function placesOf(value: string): Set<string> {
   const places = new Set<string>();
-  const re = /\bof (?:the )?([a-z][a-z'-]*)/gi;
+  const re = /\bof (?:the )?([A-Z][a-z'-]+)/g;
   let match: RegExpExecArray | null;
-  while ((match = re.exec(value.toLowerCase()))) places.add(match[1]);
+  while ((match = re.exec(value))) {
+    const word = match[1].toLowerCase();
+    if (PLACE_SKIP.has(word)) continue;
+    places.add(word.slice(0, 5));
+  }
   return places;
 }
 

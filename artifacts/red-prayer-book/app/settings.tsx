@@ -89,6 +89,7 @@ export default function Settings() {
   const setDisplayName = usePrefs((state) => state.setDisplayName);
   const [nameDraft, setNameDraft] = useState(displayName);
   const [nameFocused, setNameFocused] = useState(false);
+  const [savedAt, setSavedAt] = useState(0);
   const savedOpacity = useSharedValue(0);
   const savedStyle = useAnimatedStyle(() => ({ opacity: savedOpacity.value }));
   const [settings, setSettings] = useState<NotifSettings | null>(null);
@@ -103,6 +104,21 @@ export default function Settings() {
   useEffect(() => {
     setNameDraft(displayName);
   }, [displayName]);
+
+  useEffect(() => {
+    if (!savedAt) return;
+    const timer = setTimeout(() => setSavedAt(0), 2300);
+    return () => clearTimeout(timer);
+  }, [savedAt]);
+
+  const saveName = () => {
+    setDisplayName(nameDraft);
+    setSavedAt(Date.now());
+    savedOpacity.value = withSequence(
+      withTiming(1, { duration: 150, easing: EASE_OUT }),
+      withDelay(2000, withTiming(0, { duration: 150, easing: EASE_OUT })),
+    );
+  };
 
   const toggle = useCallback(
     async (kind: ReminderKey, value: boolean) => {
@@ -151,6 +167,8 @@ export default function Settings() {
           onChangeText={setNameDraft}
           onFocus={() => setNameFocused(true)}
           onBlur={() => setNameFocused(false)}
+          onSubmitEditing={saveName}
+          returnKeyType="done"
           placeholder="Your name"
           placeholderTextColor={C.ink2}
           maxLength={60}
@@ -168,13 +186,7 @@ export default function Settings() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Save name"
-          onPress={() => {
-            setDisplayName(nameDraft);
-            savedOpacity.value = withSequence(
-              withTiming(1, { duration: 150, easing: EASE_OUT }),
-              withDelay(2000, withTiming(0, { duration: 150, easing: EASE_OUT })),
-            );
-          }}
+          onPress={saveName}
           style={(state) => ({
             minHeight: 44,
             justifyContent: "center",
@@ -184,9 +196,16 @@ export default function Settings() {
         >
           <Text style={{ color: C.rubric, fontFamily: fonts.semibold, fontSize: 18 }}>Save name</Text>
         </Pressable>
-        <Animated.Text style={[{ fontFamily: fonts.italic, fontSize: 16, color: C.ink2, marginTop: 4 }, savedStyle]}>
-          Saved
-        </Animated.Text>
+        {savedAt ? (
+          <Animated.Text
+            accessibilityLiveRegion="polite"
+            accessibilityRole="text"
+            {...({ role: "status" } as object)}
+            style={[{ fontFamily: fonts.italic, fontSize: 16, color: C.ink2, marginTop: 4 }, savedStyle]}
+          >
+            Saved
+          </Animated.Text>
+        ) : null}
 
         <View style={{ marginTop: 28 }}>
         <SmallCaps>Appearance</SmallCaps>
@@ -222,7 +241,12 @@ export default function Settings() {
                   <Toggle value={enabled} onChange={(value) => toggle(item.key, value)} label={item.label} />
                 </View>
                 {enabled ? (
-                  <Pressable onPress={() => openPicker(item.key)} style={{ minHeight: 40, justifyContent: "center" }}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Change ${item.label} time, ${fmt12(h, m)}`}
+                    onPress={() => openPicker(item.key)}
+                    style={{ minHeight: 44, justifyContent: "center" }}
+                  >
                     <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 17 }}>{fmt12(h, m)} · change time</Text>
                   </Pressable>
                 ) : null}
@@ -314,10 +338,10 @@ export default function Settings() {
             </Pressable>
           </View>
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Pressable onPress={() => setPicker(null)} style={{ minHeight: 44, justifyContent: "center" }}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Cancel" onPress={() => setPicker(null)} style={{ minHeight: 44, justifyContent: "center" }}>
               <Text style={{ color: C.ink2, fontFamily: fonts.regular, fontSize: 18 }}>Cancel</Text>
             </Pressable>
-            <Pressable onPress={confirmTime} style={{ minHeight: 44, justifyContent: "center" }}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Set time" onPress={confirmTime} style={{ minHeight: 44, justifyContent: "center" }}>
               <Text style={{ color: C.rubric, fontFamily: fonts.medium, fontSize: 18 }}>Set time</Text>
             </Pressable>
           </View>

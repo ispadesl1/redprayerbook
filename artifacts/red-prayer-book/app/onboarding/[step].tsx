@@ -111,7 +111,12 @@ export default function Onboarding() {
         <StepCopy token={String(stepNum)} title={current.title} body={current.body} />
       )}
       <View style={{ flex: 1 }} />
-      <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 24 }}>
+      <View
+        accessibilityRole="progressbar"
+        accessibilityLabel="Welcome progress"
+        accessibilityValue={{ min: 1, max: DOTS, now: stepNum + 1 }}
+        style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 24 }}
+      >
         {Array.from({ length: DOTS }, (_, index) => (
           <View key={index} style={{ width: 18, height: 2, backgroundColor: index === stepNum ? C.rubric : C.rule }} />
         ))}
@@ -165,7 +170,7 @@ export default function Onboarding() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Skip welcome"
-            onPress={() => finish()}
+            onPress={() => router.push("/onboarding/3" as never)}
             style={(state) => ({
               minHeight: 44,
               alignItems: "center",
