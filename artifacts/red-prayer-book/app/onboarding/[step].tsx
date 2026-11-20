@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Platform, Pressable, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { focusRing } from "@/components/ui/manuscript";
+import { focusRing, useFrame } from "@/components/ui/manuscript";
 import { usePalette } from "@/hooks/usePalette";
 import { usePrefs } from "@/lib/prefs";
 import { EASE_OUT } from "@/theme/motion";
@@ -62,6 +62,8 @@ export default function Onboarding() {
   const { step } = useLocalSearchParams<{ step: string }>();
   const C = usePalette();
   const insets = useSafeAreaInsets();
+  const { wide } = useFrame();
+  const { height } = useWindowDimensions();
   const completeOnboarding = usePrefs((state) => state.completeOnboarding);
   const stepNum = Math.max(0, Math.min(3, Number(step) || 0));
   const isName = stepNum === 3;
@@ -78,7 +80,17 @@ export default function Onboarding() {
     "focused" in state && Boolean(state.focused);
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.paper, paddingTop: insets.top + 36, paddingBottom: insets.bottom + 28, paddingHorizontal: 28 }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: C.paper,
+        paddingTop: wide ? Math.round(height * 0.16) : insets.top + 36,
+        paddingBottom: insets.bottom + 28,
+        paddingHorizontal: 28,
+        alignItems: wide ? "center" : undefined,
+      }}
+    >
+    <View style={wide ? { width: "100%", maxWidth: 440 } : { flex: 1 }}>
       <Text style={{ textAlign: "center", color: C.rubric, fontFamily: fonts.regular, fontSize: 28, lineHeight: 34 }}>✠</Text>
       {isName ? (
         <>
@@ -110,7 +122,7 @@ export default function Onboarding() {
       ) : (
         <StepCopy token={String(stepNum)} title={current.title} body={current.body} />
       )}
-      <View style={{ flex: 1 }} />
+      {wide ? <View style={{ height: 36 }} /> : <View style={{ flex: 1 }} />}
       <View
         accessibilityRole="progressbar"
         accessibilityLabel="Welcome progress"
@@ -189,6 +201,7 @@ export default function Onboarding() {
           </Pressable>
         </View>
       )}
+    </View>
     </View>
   );
 }
