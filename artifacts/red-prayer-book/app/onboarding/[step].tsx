@@ -1,130 +1,207 @@
-import { View, Text, Pressable, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, router } from 'expo-router';
-import { colors } from '@/theme/colors';
-import { spacing, radii } from '@/theme/spacing';
+import { useEffect, useState } from "react";
+import { Platform, Pressable, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { focusRing, useFrame } from "@/components/ui/manuscript";
+import { usePalette } from "@/hooks/usePalette";
+import { usePrefs } from "@/lib/prefs";
+import { EASE_OUT } from "@/theme/motion";
+import { fonts } from "@/theme/typography";
 
-const STEPS = [
+const WELCOME = [
   {
-    title: 'Welcome to\nRed Prayer Book',
-    body: 'A living compendium of ancient Orthodox Christian prayer, carried with you always.',
-    icon: '✟',
+    title: "Welcome to\nthe Red Prayer Book",
+    body: "A pocket prayer book of Orthodox Christian prayer, carried with you.",
   },
   {
-    title: 'Pray With\nThe Holy Fathers',
-    body: 'Morning and evening prayers, liturgical calendar, saints\' lives, and the full Orthodox prayer book.',
-    icon: '☦',
+    title: "Pray with\nthe holy fathers",
+    body: "Morning and evening prayers, the calendar, and the prayers of the book.",
   },
   {
-    title: 'Begin Your\nDaily Prayer',
-    body: 'Open the sacred page each day and let your heart rise in prayer to the living God.',
-    icon: '🕯',
+    title: "Begin the day",
+    body: "Open the page, keep the hours, and let the words be said slowly.",
   },
 ];
 
+const DOTS = 4;
+
+function StepCopy({ title, body, token }: { title: string; body: string; token: string }) {
+  const C = usePalette();
+  const reduced = useReducedMotion();
+  const titleOpacity = useSharedValue(0);
+  const titleY = useSharedValue(8);
+  const bodyOpacity = useSharedValue(0);
+  const bodyY = useSharedValue(8);
+  useEffect(() => {
+    const rise = reduced ? 0 : 8;
+    titleOpacity.value = 0;
+    bodyOpacity.value = 0;
+    titleY.value = rise;
+    bodyY.value = rise;
+    titleOpacity.value = withTiming(1, { duration: reduced ? 0 : 240, easing: EASE_OUT });
+    titleY.value = withTiming(0, { duration: reduced ? 0 : 240, easing: EASE_OUT });
+    bodyOpacity.value = withDelay(reduced ? 0 : 50, withTiming(1, { duration: reduced ? 0 : 240, easing: EASE_OUT }));
+    bodyY.value = withDelay(reduced ? 0 : 50, withTiming(0, { duration: reduced ? 0 : 240, easing: EASE_OUT }));
+  }, [token, reduced, titleOpacity, titleY, bodyOpacity, bodyY]);
+  const titleStyle = useAnimatedStyle(() => ({ opacity: titleOpacity.value, transform: [{ translateY: titleY.value }] }));
+  const bodyStyle = useAnimatedStyle(() => ({ opacity: bodyOpacity.value, transform: [{ translateY: bodyY.value }] }));
+  return (
+    <>
+      <Animated.Text style={[{ fontFamily: fonts.medium, fontSize: 34, lineHeight: 40, color: C.ink, textAlign: "center", marginTop: 28 }, titleStyle]}>
+        {title}
+      </Animated.Text>
+      <Animated.Text style={[{ fontFamily: fonts.italic, fontSize: 19, lineHeight: 30, color: C.ink2, textAlign: "center", marginTop: 18 }, bodyStyle]}>
+        {body}
+      </Animated.Text>
+    </>
+  );
+}
+
 export default function Onboarding() {
   const { step } = useLocalSearchParams<{ step: string }>();
-  const stepNum = Math.max(0, Math.min(2, Number(step) || 0));
-  const current = STEPS[stepNum];
-  const isLast = stepNum === STEPS.length - 1;
+  const C = usePalette();
+  const insets = useSafeAreaInsets();
+  const { wide } = useFrame();
+  const { height } = useWindowDimensions();
+  const completeOnboarding = usePrefs((state) => state.completeOnboarding);
+  const stepNum = Math.max(0, Math.min(3, Number(step) || 0));
+  const isName = stepNum === 3;
+  const current = WELCOME[Math.min(stepNum, 2)];
+  const [name, setName] = useState("");
+  const [focused, setFocused] = useState(false);
 
-  const handleNext = () => {
-    if (isLast) {
-      router.replace('/(tabs)');
-    } else {
-      router.push(`/onboarding/${stepNum + 1}`);
-    }
+  const finish = (value?: string) => {
+    completeOnboarding(value);
+    router.replace("/(tabs)");
   };
 
+  const focusedRing = (state: { pressed: boolean; focused?: boolean }) =>
+    "focused" in state && Boolean(state.focused);
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surfaceDeep }}>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl }}>
-        <View
-          style={{
-            width: 120,
-            height: 120,
-            borderRadius: 60,
-            borderWidth: 2,
-            borderColor: colors.sacredGold,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: colors.byzantineCrimson,
-            marginBottom: spacing.xl,
-          }}
-        >
-          <Image
-            source={require('@/assets/images/icon.png')}
-            style={{ width: 100, height: 100, borderRadius: 50 }}
-            resizeMode="cover"
-          />
-        </View>
-
-        <Text
-          style={{
-            fontFamily: 'serif',
-            fontWeight: '700',
-            fontSize: 32,
-            color: colors.sacredGold,
-            textAlign: 'center',
-            marginBottom: spacing.m,
-            lineHeight: 40,
-          }}
-        >
-          {current.title}
-        </Text>
-
-        <Text
-          style={{
-            fontFamily: 'serif',
-            fontStyle: 'italic',
-            fontSize: 16,
-            color: colors.ivoryVellum,
-            textAlign: 'center',
-            lineHeight: 24,
-            marginBottom: spacing.xxl,
-          }}
-        >
-          {current.body}
-        </Text>
-
-        <View style={{ flexDirection: 'row', gap: 8, marginBottom: spacing.xl }}>
-          {STEPS.map((_, i) => (
-            <View
-              key={i}
-              style={{
-                width: i === stepNum ? 24 : 8,
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: i === stepNum ? colors.sacredGold : colors.textMuted,
-              }}
-            />
-          ))}
-        </View>
-
-        <Pressable
-          onPress={handleNext}
-          style={({ pressed }) => ({
-            backgroundColor: pressed ? colors.surface : colors.byzantineCrimson,
-            paddingVertical: spacing.m,
-            paddingHorizontal: spacing.xxl,
-            borderRadius: radii.pill,
-            borderWidth: 1,
-            borderColor: colors.sacredGold,
-          })}
-        >
-          <Text
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: C.paper,
+        paddingTop: wide ? Math.round(height * 0.16) : insets.top + 36,
+        paddingBottom: insets.bottom + 28,
+        paddingHorizontal: 28,
+        alignItems: wide ? "center" : undefined,
+      }}
+    >
+    <View style={wide ? { width: "100%", maxWidth: 440 } : { flex: 1 }}>
+      <Text style={{ textAlign: "center", color: C.rubric, fontFamily: fonts.regular, fontSize: 28, lineHeight: 34 }}>✠</Text>
+      {isName ? (
+        <>
+          <StepCopy token="name" title={"What should we call you?"} body="Optional. You can change it later in Settings. If you skip, the book will not invent a name." />
+          <TextInput
+            accessibilityLabel="Your name"
+            value={name}
+            onChangeText={setName}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onSubmitEditing={() => finish(name.trim())}
+            returnKeyType="done"
+            placeholder="Your name"
+            placeholderTextColor={C.ink2}
+            maxLength={60}
             style={{
-              color: colors.sacredGold,
-              fontFamily: 'serif',
-              fontWeight: '700',
-              fontSize: 16,
-              letterSpacing: 1,
+              marginTop: 28,
+              minHeight: 48,
+              color: C.ink,
+              fontFamily: fonts.regular,
+              fontSize: 20,
+              lineHeight: 28,
+              borderBottomWidth: focused ? 2 : 1,
+              borderBottomColor: focused ? C.rubric : C.ink2,
+              ...(Platform.OS === "web" ? ({ outline: "none" } as object) : null),
             }}
-          >
-            {isLast ? 'Begin Your Daily Prayer' : 'Continue'}
-          </Text>
-        </Pressable>
+          />
+        </>
+      ) : (
+        <StepCopy token={String(stepNum)} title={current.title} body={current.body} />
+      )}
+      {wide ? <View style={{ height: 36 }} /> : <View style={{ flex: 1 }} />}
+      <View
+        accessibilityRole="progressbar"
+        accessibilityLabel="Welcome progress"
+        accessibilityValue={{ min: 1, max: DOTS, now: stepNum + 1 }}
+        {...(Platform.OS === "web"
+          ? ({
+              "aria-valuemin": 1,
+              "aria-valuemax": DOTS,
+              "aria-valuenow": stepNum + 1,
+            } as object)
+          : null)}
+        style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 24 }}
+      >
+        {Array.from({ length: DOTS }, (_, index) => (
+          <View key={index} style={{ width: 18, height: 2, backgroundColor: index === stepNum ? C.rubric : C.rule }} />
+        ))}
       </View>
-    </SafeAreaView>
+      {isName ? (
+        <View style={{ gap: 8 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Save name"
+            onPress={() => finish(name.trim())}
+            style={(state) => ({
+              backgroundColor: C.rubric,
+              minHeight: 52,
+              alignItems: "center",
+              justifyContent: "center",
+              ...focusRing(C.rubric, focusedRing(state)),
+            })}
+          >
+            <Text style={{ color: C.onRubric, fontFamily: fonts.semibold, fontSize: 18 }}>Save name</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Skip name"
+            onPress={() => finish()}
+            style={(state) => ({
+              minHeight: 44,
+              alignItems: "center",
+              justifyContent: "center",
+              ...focusRing(C.rubric, focusedRing(state)),
+            })}
+          >
+            <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Skip</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={{ gap: 8 }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Continue"
+            onPress={() => router.push(`/onboarding/${stepNum + 1}` as never)}
+            style={(state) => ({
+              backgroundColor: C.rubric,
+              minHeight: 52,
+              alignItems: "center",
+              justifyContent: "center",
+              ...focusRing(C.rubric, focusedRing(state)),
+            })}
+          >
+            <Text style={{ color: C.onRubric, fontFamily: fonts.semibold, fontSize: 18 }}>Continue</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Skip welcome"
+            onPress={() => router.push("/onboarding/3" as never)}
+            style={(state) => ({
+              minHeight: 44,
+              alignItems: "center",
+              justifyContent: "center",
+              ...focusRing(C.rubric, focusedRing(state)),
+            })}
+          >
+            <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Skip</Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
+    </View>
   );
 }

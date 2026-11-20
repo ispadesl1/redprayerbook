@@ -8,21 +8,25 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { colors as C } from "@/theme/colors";
-import { spacing, radii } from "@/theme/spacing";
+import { ServiceConnect } from "@/components/ServiceConnect";
+import { usePalette } from "@/hooks/usePalette";
+import { goBack } from "@/lib/navigation";
+import { apiBase, probeService, responseIsUnconfigured, type ServiceState } from "@/lib/service";
+import { fonts } from "@/theme/typography";
+import { spacing } from "@/theme/spacing";
 
-const API_BASE = `${process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : ""}/api`;
+const API_BASE = apiBase() ?? "";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   streaming?: boolean;
+  failed?: boolean;
 }
 
 interface Conversation {
@@ -41,11 +45,13 @@ const SUGGESTIONS = [
 ];
 
 export default function CompanionScreen() {
+  const C = usePalette();
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [initializing, setInitializing] = useState(true);
+  const [initializing, setInitializing] = useState(false);
+  const [service, setService] = useState<ServiceState>(apiBase() ? "checking" : "connect");
   const flatListRef = useRef<FlatList>(null);
   const streamingIdRef = useRef<string | null>(null);
 
@@ -56,19 +62,40 @@ export default function CompanionScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: "Spiritual Companion Chat" }),
       });
-      if (!res.ok) throw new Error("Failed to start conversation");
+      if (!res.ok) {
+        if (await responseIsUnconfigured(res)) setService("connect");
+        else setConversation(null);
+        return;
+      }
       const conv: Conversation = await res.json();
       setConversation(conv);
     } catch {
-      Alert.alert("Connection Error", "Could not reach the spiritual companion. Please try again.");
+      setConversation(null);
     } finally {
       setInitializing(false);
     }
   }, []);
 
   useEffect(() => {
-    startConversation();
-  }, [startConversation]);
+    let cancel = false;
+    if (!apiBase()) {
+      setService("connect");
+      return;
+    }
+    probeService().then((next) => {
+      if (!cancel) setService(next);
+    });
+    return () => {
+      cancel = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (service === "ready") {
+      setInitializing(true);
+      startConversation();
+    }
+  }, [service, startConversation]);
 
   const scrollToEnd = useCallback(() => {
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 80);
@@ -105,7 +132,13 @@ export default function CompanionScreen() {
           }
         );
 
-        if (!res.ok || !res.body) throw new Error("Stream failed");
+        if (!res.ok || !res.body) {
+          if (await responseIsUnconfigured(res)) {
+            setService("connect");
+            return;
+          }
+          throw new Error("Stream failed");
+        }
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -144,13 +177,7 @@ export default function CompanionScreen() {
       } catch {
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === streamingId
-              ? {
-                  ...m,
-                  content: "Glory to God. I encountered a difficulty — please try again.",
-                  streaming: false,
-                }
-              : m
+            m.id === streamingId ? { ...m, content: "", streaming: false, failed: true } : m
           )
         );
       } finally {
@@ -174,57 +201,43 @@ export default function CompanionScreen() {
           paddingHorizontal: spacing.s,
         }}
       >
-        {!isUser && (
-          <View
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 17,
-              backgroundColor: C.byzantineCrimson,
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: C.sacredGold,
-              flexShrink: 0,
-            }}
-          >
-            <MaterialCommunityIcons name="cross" size={16} color={C.sacredGold} />
-          </View>
-        )}
-        <View
-          style={{
-            maxWidth: "78%",
-            backgroundColor: isUser ? C.byzantineCrimson : C.surfaceElevated,
-            borderRadius: radii.m,
-            borderWidth: 1,
-            borderColor: isUser ? C.sacredGold : C.hairline,
-            padding: spacing.m,
-          }}
-        >
-          <Text
-            style={{
-              color: isUser ? C.sacredGold : C.textPrimary,
-              fontFamily: "serif",
-              fontSize: 15,
-              lineHeight: 22,
-            }}
-          >
-            {item.content}
-            {item.streaming && (
-              <Text style={{ color: C.sacredGold }}>▌</Text>
-            )}
+        <View style={{ flex: 1, maxWidth: "100%", borderBottomWidth: 1, borderBottomColor: C.rule, paddingVertical: 12 }}>
+          <Text style={{ fontFamily: fonts.medium, fontSize: 14, lineHeight: 18, color: C.rubric, fontVariant: ["small-caps"], letterSpacing: 0.4 }}>
+            {isUser ? "You" : "Companion"}
           </Text>
+          {item.failed ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Try again"
+              onPress={() => {
+                const index = messages.findIndex((entry) => entry.id === item.id);
+                const previous = messages.slice(0, index).reverse().find((entry) => entry.role === "user");
+                if (previous) sendMessage(previous.content);
+              }}
+              style={{ minHeight: 44, justifyContent: "center", marginTop: 4 }}
+            >
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+            </Pressable>
+          ) : (
+          <Text style={{ color: C.ink, fontFamily: fonts.regular, fontSize: 18, lineHeight: 28, marginTop: 4 }}>
+            {item.content}
+            {item.streaming ? <Text style={{ fontFamily: fonts.regular, color: C.rubric }}> ▌</Text> : null}
+          </Text>
+          )}
         </View>
       </View>
     );
   };
+
+  if (service === "checking") return <ServiceConnect title="Companion" checking />;
+  if (service !== "ready") return <ServiceConnect title="Companion" />;
 
   if (initializing) {
     return (
       <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: C.surfaceDeep, alignItems: "center", justifyContent: "center" }}>
         <MaterialCommunityIcons name="cross" size={40} color={C.sacredGold} style={{ marginBottom: spacing.m }} />
         <ActivityIndicator color={C.sacredGold} size="large" />
-        <Text style={{ color: C.textMuted, fontFamily: "serif", marginTop: spacing.m }}>
+        <Text style={{ color: C.textMuted, fontFamily: fonts.regular, marginTop: spacing.m }}>
           Preparing your spiritual companion…
         </Text>
       </SafeAreaView>
@@ -246,35 +259,21 @@ export default function CompanionScreen() {
         }}
       >
         <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, marginRight: spacing.m })}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          onPress={goBack}
+          style={({ pressed }) => ({ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.6 : 1 })}
         >
-          <MaterialCommunityIcons name="chevron-left" size={26} color={C.sacredGold} />
+          <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 22, lineHeight: 26 }}>‹</Text>
         </Pressable>
-        <View
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 19,
-            backgroundColor: C.byzantineCrimson,
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1,
-            borderColor: C.sacredGold,
-            marginRight: spacing.s,
-          }}
-        >
-          <MaterialCommunityIcons name="cross" size={18} color={C.sacredGold} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16 }}>
-            Father Seraphim
+        <View style={{ flex: 1, paddingLeft: 8 }}>
+          <Text style={{ color: C.ink, fontFamily: fonts.medium, fontSize: 22, lineHeight: 28 }}>
+            Companion
           </Text>
-          <Text style={{ color: C.textMuted, fontSize: 11 }}>
-            Orthodox Spiritual Companion
+          <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 16, lineHeight: 22 }}>
+            Ask, and a reply is composed here
           </Text>
         </View>
-        <MaterialCommunityIcons name="dots-vertical" size={22} color={C.textMuted} />
       </View>
 
       <KeyboardAvoidingView
@@ -285,53 +284,47 @@ export default function CompanionScreen() {
         {messages.length === 0 ? (
           <View style={{ flex: 1 }}>
             {/* Welcome */}
-            <View style={{ alignItems: "center", paddingTop: spacing.xxl, paddingHorizontal: spacing.l, paddingBottom: spacing.l }}>
-              <View
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 36,
-                  backgroundColor: C.byzantineCrimson,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 2,
-                  borderColor: C.sacredGold,
-                  marginBottom: spacing.m,
-                }}
-              >
-                <MaterialCommunityIcons name="cross" size={34} color={C.sacredGold} />
-              </View>
-              <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 22, textAlign: "center", marginBottom: spacing.s }}>
-                Glory to God for All Things
+            <View style={{ paddingTop: 28, paddingHorizontal: 22, paddingBottom: 12 }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18, lineHeight: 24, textAlign: "center" }}>✠</Text>
+              <Text style={{ color: C.ink, fontFamily: fonts.medium, fontSize: 28, lineHeight: 34, textAlign: "center", marginTop: 12 }}>
+                Glory to God for all things
               </Text>
-              <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 14, textAlign: "center", lineHeight: 22 }}>
-                I am Father Seraphim, your Orthodox spiritual companion. Ask me about prayers, the saints, fasting, the sacraments, or anything on your heart.
+              <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, textAlign: "center", marginTop: 10 }}>
+                Ask about prayers, the saints, fasting, or the sacraments.
               </Text>
+              {!conversation && !initializing ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Try again"
+                  onPress={() => {
+                    setInitializing(true);
+                    startConversation();
+                  }}
+                  style={{ minHeight: 44, justifyContent: "center", alignItems: "center" }}
+                >
+                  <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+                </Pressable>
+              ) : null}
             </View>
-
-            {/* Suggestion chips */}
-            <View style={{ paddingHorizontal: spacing.m, gap: spacing.s }}>
-              <Text style={{ color: C.textMuted, fontSize: 12, fontWeight: "600", letterSpacing: 1, textTransform: "uppercase", marginBottom: spacing.xs }}>
+            <View style={{ paddingHorizontal: 22 }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.medium, fontSize: 16, lineHeight: 22, fontVariant: ["small-caps"], letterSpacing: 0.6, marginBottom: 4 }}>
                 Begin with a question
               </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.xs }}>
-                {SUGGESTIONS.map((s) => (
-                  <Pressable
-                    key={s}
-                    onPress={() => sendMessage(s)}
-                    style={({ pressed }) => ({
-                      backgroundColor: pressed ? C.byzantineCrimson : C.surfaceElevated,
-                      borderWidth: 1,
-                      borderColor: C.hairline,
-                      borderRadius: radii.pill,
-                      paddingHorizontal: spacing.m,
-                      paddingVertical: 8,
-                    })}
-                  >
-                    <Text style={{ color: C.textPrimary, fontFamily: "serif", fontSize: 13 }}>{s}</Text>
-                  </Pressable>
-                ))}
-              </View>
+              {SUGGESTIONS.map((s) => (
+                <Pressable
+                  key={s}
+                  onPress={() => sendMessage(s)}
+                  style={({ pressed }) => ({
+                    minHeight: 44,
+                    justifyContent: "center",
+                    borderBottomWidth: 1,
+                    borderBottomColor: C.rule,
+                    backgroundColor: pressed ? C.highlight : "transparent",
+                  })}
+                >
+                  <Text style={{ color: C.ink, fontFamily: fonts.regular, fontSize: 18, lineHeight: 26 }}>{s}</Text>
+                </Pressable>
+              ))}
             </View>
           </View>
         ) : (
@@ -362,17 +355,18 @@ export default function CompanionScreen() {
           <TextInput
             style={{
               flex: 1,
-              color: C.textPrimary,
-              fontFamily: "serif",
-              fontSize: 15,
-              lineHeight: 22,
-              backgroundColor: C.surface,
-              borderRadius: radii.m,
-              borderWidth: 1,
-              borderColor: C.hairline,
-              paddingHorizontal: spacing.m,
-              paddingVertical: spacing.s,
+              color: C.ink,
+              fontFamily: fonts.regular,
+              fontSize: 18,
+              lineHeight: 26,
+              backgroundColor: "transparent",
+              borderBottomWidth: 1,
+              borderBottomColor: C.ink2,
+              minHeight: 44,
+              paddingHorizontal: 4,
+              paddingVertical: 8,
               maxHeight: 120,
+              ...(Platform.OS === "web" ? ({ outline: "none" } as object) : null),
             }}
             placeholder="Ask Father Seraphim…"
             placeholderTextColor={C.textMuted}
@@ -386,27 +380,21 @@ export default function CompanionScreen() {
             onPress={() => sendMessage(input)}
             disabled={!input.trim() || loading}
             style={({ pressed }) => ({
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor:
-                !input.trim() || loading ? C.surface : C.byzantineCrimson,
+              minWidth: 44,
+              minHeight: 44,
+              paddingHorizontal: 12,
               alignItems: "center",
               justifyContent: "center",
-              borderWidth: 1,
-              borderColor:
-                !input.trim() || loading ? C.hairline : C.sacredGold,
-              opacity: pressed ? 0.75 : 1,
+              backgroundColor: !input.trim() || loading ? "transparent" : C.rubric,
+              opacity: pressed ? 0.85 : 1,
             })}
           >
             {loading ? (
-              <ActivityIndicator size="small" color={C.sacredGold} />
+              <ActivityIndicator size="small" color={C.rubric} />
             ) : (
-              <MaterialCommunityIcons
-                name="send"
-                size={20}
-                color={!input.trim() ? C.textMuted : C.sacredGold}
-              />
+              <Text style={{ color: !input.trim() ? C.ink2 : C.onRubric, fontFamily: fonts.semibold, fontSize: 16 }}>
+                Send
+              </Text>
             )}
           </Pressable>
         </View>

@@ -1,10 +1,24 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
-import { db } from "@workspace/db";
+import { getAnthropic, isUnconfigured } from "@workspace/integrations-anthropic-ai";
+import { getDb } from "@workspace/db";
 import { conversations, messages, insertConversationSchema, insertMessageSchema } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
+
+function ready(res: Response): boolean {
+  try {
+    getDb();
+    getAnthropic();
+    return true;
+  } catch (error) {
+    if (isUnconfigured(error)) {
+      res.status(503).json({ error: "unconfigured" });
+      return false;
+    }
+    throw error;
+  }
+}
 
 const SYSTEM_PROMPT = `You are a compassionate Orthodox Christian spiritual companion and prayer guide named "Father Seraphim." Your role is to support the user in their Orthodox Christian faith journey.
 
@@ -19,6 +33,8 @@ You help with:
 Your tone is warm, gentle, learned, and pastoral — like a wise priest or elder (staretz). You quote Church Fathers, scripture, and the lives of the saints naturally. You always encourage the user toward repentance, humility, prayer, and love. You do not engage with topics unrelated to Orthodox Christian spirituality.`;
 
 router.get("/anthropic/conversations", async (req: Request, res: Response) => {
+  if (!ready(res)) return;
+  const db = getDb();
   try {
     const result = await db.select().from(conversations).orderBy(conversations.createdAt);
     res.json(result);
@@ -29,6 +45,8 @@ router.get("/anthropic/conversations", async (req: Request, res: Response) => {
 });
 
 router.post("/anthropic/conversations", async (req: Request, res: Response) => {
+  if (!ready(res)) return;
+  const db = getDb();
   try {
     const parsed = insertConversationSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -44,8 +62,11 @@ router.post("/anthropic/conversations", async (req: Request, res: Response) => {
 });
 
 router.delete("/anthropic/conversations/:conversationId", async (req: Request, res: Response) => {
+  if (!ready(res)) return;
+  const db = getDb();
   try {
-    const id = parseInt(req.params.conversationId, 10);
+    const rawId = req.params.conversationId;
+    const id = parseInt(Array.isArray(rawId) ? rawId[0] : rawId, 10);
     if (isNaN(id)) {
       res.status(400).json({ error: "Invalid conversation ID" });
       return;
@@ -59,8 +80,11 @@ router.delete("/anthropic/conversations/:conversationId", async (req: Request, r
 });
 
 router.get("/anthropic/conversations/:conversationId/messages", async (req: Request, res: Response) => {
+  if (!ready(res)) return;
+  const db = getDb();
   try {
-    const id = parseInt(req.params.conversationId, 10);
+    const rawId = req.params.conversationId;
+    const id = parseInt(Array.isArray(rawId) ? rawId[0] : rawId, 10);
     if (isNaN(id)) {
       res.status(400).json({ error: "Invalid conversation ID" });
       return;
@@ -74,8 +98,12 @@ router.get("/anthropic/conversations/:conversationId/messages", async (req: Requ
 });
 
 router.post("/anthropic/conversations/:conversationId/messages", async (req: Request, res: Response) => {
+  if (!ready(res)) return;
+  const db = getDb();
+  const anthropic = getAnthropic();
   try {
-    const conversationId = parseInt(req.params.conversationId, 10);
+    const rawConversationId = req.params.conversationId;
+    const conversationId = parseInt(Array.isArray(rawConversationId) ? rawConversationId[0] : rawConversationId, 10);
     if (isNaN(conversationId)) {
       res.status(400).json({ error: "Invalid conversation ID" });
       return;
@@ -148,6 +176,8 @@ Requirements:
 Compose only the prayer. Nothing else.`;
 
 router.post("/anthropic/compose-prayer", async (req: Request, res: Response) => {
+  if (!ready(res)) return;
+  const anthropic = getAnthropic();
   try {
     const { intention } = req.body as { intention?: string };
     if (!intention || typeof intention !== "string" || !intention.trim()) {

@@ -1,9 +1,9 @@
-import { View, Text, Pressable } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { ProgressRing } from './ProgressRing';
-import { colors } from '@/theme/colors';
-import type { BadgeDef } from '@/lib/badges';
-import { getProgressFraction, isEarned } from '@/lib/badges';
+import { View, Text, Pressable } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { usePalette } from "@/hooks/usePalette";
+import { fonts } from "@/theme/typography";
+import type { BadgeDef } from "@/lib/badges";
+import { getProgressFraction, isEarned } from "@/lib/badges";
 
 type Props = {
   def: BadgeDef;
@@ -13,98 +13,62 @@ type Props = {
 };
 
 export function BadgeItem({ def, progress, size = 68, onPress }: Props) {
+  const C = usePalette();
   const fraction = getProgressFraction(progress, def.max);
   const earned = isEarned(progress, def.max);
   const locked = progress === 0;
+  const mark = earned ? C.rubric : C.ink2;
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${def.label}, ${progress} of ${def.max}`}
       onPress={onPress}
       style={({ pressed }) => ({
-        alignItems: 'center',
-        width: size + 16,
-        opacity: pressed ? 0.8 : 1,
+        alignItems: "center",
+        width: size + 18,
+        backgroundColor: pressed ? C.highlight : "transparent",
+        paddingVertical: 6,
       })}
     >
-      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-        <ProgressRing
-          progress={fraction}
-          color={earned ? def.color : locked ? 'rgba(255,255,255,0.08)' : def.color}
-          size={size}
-          strokeWidth={4}
-          bgStroke="rgba(255,255,255,0.1)"
-        />
-        <View
-          style={{
-            position: 'absolute',
-            width: size - 14,
-            height: size - 14,
-            borderRadius: (size - 14) / 2,
-            backgroundColor: earned
-              ? 'rgba(14,14,16,0.85)'
-              : locked
-              ? 'rgba(14,14,16,0.7)'
-              : 'rgba(14,14,16,0.85)',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 1,
-            borderColor: earned ? def.color : 'rgba(255,255,255,0.08)',
-          }}
-        >
-          <MaterialCommunityIcons
-            name={def.mciIcon as any}
-            size={22}
-            color={locked ? 'rgba(255,255,255,0.25)' : def.color}
-          />
-          {locked && (
-            <MaterialCommunityIcons
-              name="lock"
-              size={10}
-              color="rgba(255,255,255,0.25)"
-              style={{ position: 'absolute', bottom: 8, right: 8 }}
-            />
-          )}
-        </View>
+      <View
+        style={{
+          width: size - 16,
+          height: size - 16,
+          borderWidth: 1,
+          borderColor: mark,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <MaterialCommunityIcons name={def.mciIcon as never} size={22} color={mark} />
       </View>
       <Text
         style={{
-          color: locked ? colors.textMuted : colors.sacredGold,
-          fontWeight: '700',
-          fontSize: 14,
+          color: C.ink,
+          fontFamily: fonts.regular,
+          fontSize: 15,
           marginTop: 6,
+          fontVariant: ["oldstyle-nums"],
         }}
       >
-        {progress}
+        {progress}/{def.max}
       </Text>
       <Text
         style={{
-          color: locked ? 'rgba(255,255,255,0.25)' : colors.textSecondary,
-          fontSize: 9,
-          textAlign: 'center',
+          color: locked ? C.ink2 : C.ink,
+          fontFamily: fonts.regular,
+          fontSize: 13,
+          lineHeight: 16,
+          textAlign: "center",
           marginTop: 2,
-          lineHeight: 12,
         }}
         numberOfLines={2}
       >
         {def.label}
       </Text>
-      <View
-        style={{
-          width: size,
-          height: 2,
-          borderRadius: 1,
-          marginTop: 4,
-          backgroundColor: 'rgba(255,255,255,0.08)',
-          overflow: 'hidden',
-        }}
-      >
-        <View
-          style={{
-            width: `${Math.round(fraction * 100)}%`,
-            height: 2,
-            backgroundColor: locked ? 'transparent' : def.color,
-          }}
-        />
+      <View style={{ width: size - 8, height: 2, marginTop: 6, backgroundColor: C.rule }}>
+        <View style={{ width: `${Math.round(fraction * 100)}%`, height: 2, backgroundColor: earned ? C.rubric : C.ink2 }} />
       </View>
     </Pressable>
   );

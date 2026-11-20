@@ -1,150 +1,106 @@
-import { useMemo, useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { colors } from '@/theme/colors';
-import { spacing, radii } from '@/theme/spacing';
-import { getCalendarEntry, julianShift } from '@/lib/calendar';
-import { DaySheet } from './DaySheet';
+import { Pressable, Text, View } from "react-native";
+import { usePalette } from "@/hooks/usePalette";
+import { fastLines, fastMark, type LiturgicalDay } from "@/lib/calendar";
+import { fonts } from "@/theme/typography";
 
 type Props = {
   year: number;
   month: number;
-  style: 'new' | 'old';
+  days: LiturgicalDay[] | undefined;
+  selected: number;
+  onSelect: (day: number) => void;
 };
 
-const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const DOW = ["S", "M", "T", "W", "T", "F", "S"];
 
-export function MonthGrid({ year, month, style }: Props) {
-  const [activeDay, setActiveDay] = useState<{
-    year: number;
-    month: number;
-    day: number;
-  } | null>(null);
-
-  const cells = useMemo(() => {
-    const first = new Date(year, month, 1);
-    const startDow = first.getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const out: (number | null)[] = [];
-    for (let i = 0; i < startDow; i++) out.push(null);
-    for (let d = 1; d <= daysInMonth; d++) out.push(d);
-    while (out.length % 7 !== 0) out.push(null);
-    return out;
-  }, [year, month]);
+export function MonthGrid({ year, month, days, selected, onSelect }: Props) {
+  const C = usePalette();
+  const first = new Date(year, month, 1).getDay();
+  const count = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < first; i++) cells.push(null);
+  for (let day = 1; day <= count; day++) cells.push(day);
+  while (cells.length % 7 !== 0) cells.push(null);
+  const today = new Date();
 
   return (
-    <View>
-      <View
-        style={{
-          flexDirection: 'row',
-          backgroundColor: colors.byzantineCrimson,
-        }}
-      >
-        {DOW.map((d) => (
-          <View
-            key={d}
-            style={{ flex: 1, alignItems: 'center', paddingVertical: 10 }}
+    <View style={{ maxWidth: 470, alignSelf: "center", width: "100%" }}>
+      <View style={{ flexDirection: "row" }}>
+        {DOW.map((label, index) => (
+          <Text
+            key={`${label}-${index}`}
+            style={{
+              flex: 1,
+              textAlign: "center",
+              fontFamily: fonts.medium,
+              fontSize: 15,
+              color: index === 0 ? C.rubric : C.ink2,
+              fontVariant: ["small-caps"],
+              paddingVertical: 6,
+            }}
           >
-            <Text
-              style={{
-                color: colors.sacredGold,
-                fontSize: 10,
-                letterSpacing: 1.2,
-                fontWeight: '600',
-                textTransform: 'uppercase',
-              }}
-            >
-              {d}
-            </Text>
-          </View>
+            {label}
+          </Text>
         ))}
       </View>
-
-      <View
-        style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          borderColor: colors.hairline,
-          borderWidth: 1,
-        }}
-      >
-        {cells.map((d, i) => {
-          if (d == null) {
-            return (
-              <View
-                key={`empty-${i}`}
-                style={{
-                  width: '14.285%',
-                  minHeight: 80,
-                  borderColor: colors.hairline,
-                  borderWidth: 0.5,
-                  backgroundColor: 'rgba(0,0,0,0.2)',
-                }}
-              />
-            );
-          }
-          const date = julianShift(new Date(year, month, d), style);
-          const entry = getCalendarEntry(date);
-          const isToday =
-            date.getDate() === new Date().getDate() &&
-            date.getMonth() === new Date().getMonth() &&
-            date.getFullYear() === new Date().getFullYear();
-
+      <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+        {cells.map((day, index) => {
+          if (day == null) return <View key={`e-${index}`} style={{ width: "14.285%", aspectRatio: 1 }} />;
+          const info = days?.find((item) => item.civilDay === day);
+          const mark = info ? fastMark(info) : null;
+          const feast = info?.greatFeast ?? false;
+          const fastName = info ? (mark === "dairy" ? "Dairy allowed" : fastLines(info).title) : "";
+          const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+          const isSelected = day === selected;
+          const sunday = new Date(year, month, day).getDay() === 0;
           return (
             <Pressable
-              key={`day-${i}`}
-              onPress={() => setActiveDay({ year, month, day: d })}
-              style={({ pressed }) => ({
-                width: '14.285%',
-                minHeight: 80,
-                borderColor: colors.hairline,
-                borderWidth: 0.5,
-                padding: 4,
-                backgroundColor: isToday
-                  ? 'rgba(139,14,26,0.3)'
-                  : pressed
-                  ? 'rgba(212,175,55,0.1)'
-                  : 'transparent',
-              })}
+              key={day}
+              onPress={() => onSelect(day)}
+              accessibilityLabel={`${day}${feast ? ", great feast" : ""}${fastName ? `, ${fastName}` : ""}`}
+              accessibilityState={{ selected: isSelected }}
+              style={{
+                width: "14.285%",
+                aspectRatio: 1,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 999,
+                backgroundColor: isSelected ? C.rubric : "transparent",
+                borderWidth: isToday && !isSelected ? 1 : 0,
+                borderColor: C.rubric,
+              }}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text
-                  style={{
-                    color: isToday ? colors.sacredGold : colors.ivoryVellum,
-                    fontWeight: '700',
-                    fontSize: 14,
-                  }}
-                >
-                  {d}
-                </Text>
-                {entry?.fast === 'fish' ? (
-                  <Text style={{ fontSize: 8, marginLeft: 2 }}>🐟</Text>
+              <Text
+                style={{
+                  fontFamily: fonts.regular,
+                  fontSize: 18,
+                  color: isSelected ? C.onRubric : sunday ? C.rubric : C.ink,
+                  fontVariant: ["oldstyle-nums"],
+                }}
+              >
+                {day}
+              </Text>
+              <View style={{ flexDirection: "row", gap: 3, height: 8, alignItems: "center" }}>
+                {feast ? (
+                  <Text style={{ color: isSelected ? C.onRubric : C.rubric, fontFamily: fonts.regular, fontSize: 11, lineHeight: 14 }}>✠</Text>
+                ) : null}
+                {mark === "strict" ? (
+                  <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: isSelected ? C.onRubric : C.rubric }} />
+                ) : null}
+                {mark === "wine" ? (
+                  <View style={{ width: 5, height: 5, borderRadius: 3, borderWidth: 1, borderColor: isSelected ? C.onRubric : C.ink2 }} />
+                ) : null}
+                {mark === "fish" ? (
+                  <View style={{ width: 5, height: 5, borderRadius: 3, borderWidth: 1, borderColor: isSelected ? C.onRubric : C.rubric }} />
+                ) : null}
+                {mark === "dairy" ? (
+                  <View style={{ width: 5, height: 5, borderWidth: 1, borderColor: isSelected ? C.onRubric : C.ink2 }} />
                 ) : null}
               </View>
-              {entry?.title ? (
-                <Text
-                  style={{
-                    color: colors.textSecondary,
-                    fontFamily: 'serif',
-                    fontSize: 8,
-                    marginTop: 2,
-                    lineHeight: 11,
-                  }}
-                  numberOfLines={3}
-                >
-                  {entry.title}
-                </Text>
-              ) : null}
             </Pressable>
           );
         })}
       </View>
-
-      <DaySheet
-        visible={!!activeDay}
-        onClose={() => setActiveDay(null)}
-        dayInfo={activeDay}
-        style={style}
-      />
     </View>
   );
 }

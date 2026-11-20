@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { incrementBadge } from '@/lib/badges';
 
 type Bookmark = { id: string; page_index: number; label: string | null; created_at: number };
 type Highlight = { id: string; book: string; chapter: number; verse: number; color: string; created_at: number };
@@ -32,7 +33,48 @@ const KEYS = {
   prayerIntentions: 'rpb:prayer_intentions',
   prayerBookmarks: 'rpb:prayer_bookmarks',
   prayerReads: 'rpb:prayer_reads',
+  activity: 'rpb:activity',
+  bibleChapters: 'rpb:bible_chapters',
 };
+
+export type ActivityKind = 'prayer' | 'hour' | 'highlight' | 'bookmark';
+
+export type ActivityEntry = {
+  id: string;
+  kind: ActivityKind;
+  text: string;
+  at: number;
+  key?: string;
+};
+
+function newId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+export async function recordActivity(kind: ActivityKind, text: string, key?: string): Promise<void> {
+  try {
+    const list = await read<ActivityEntry>(KEYS.activity);
+    if (key && list.some((item) => item.key === key)) return;
+    list.unshift({ id: newId(), kind, text, at: Date.now(), key });
+    await write(KEYS.activity, list.slice(0, 200));
+  } catch {
+    // The prayer, hour, highlight, or bookmark is already stored.
+  }
+}
+
+export async function removeActivity(key: string): Promise<void> {
+  try {
+    const list = await read<ActivityEntry>(KEYS.activity);
+    await write(KEYS.activity, list.filter((item) => item.key !== key));
+  } catch {
+    // Leaving the earlier line is safer than failing the uncheck.
+  }
+}
+
+export async function listActivity(): Promise<ActivityEntry[]> {
+  const list = await read<ActivityEntry>(KEYS.activity);
+  return list.sort((a, b) => b.at - a.at);
+}
 
 async function read<T>(key: string): Promise<T[]> {
   try {
@@ -121,10 +163,25 @@ export async function getStreakData(): Promise<StreakData> {
 
 // ─── Prayer reads ─────────────────────────────────────────────────────────────
 
-export async function recordPrayerRead(slug: string): Promise<void> {
+export async function recordPrayerRead(slug: string, title?: string): Promise<void> {
   const reads = await read<PrayerRead>(KEYS.prayerReads);
-  reads.unshift({ slug, date: todayStr(), timestamp: Date.now() });
-  await write(KEYS.prayerReads, reads);
+  const date = todayStr();
+  const already = reads.some((item) => item.slug === slug && item.date === date);
+  if (!already) {
+    reads.unshift({ slug, date, timestamp: Date.now() });
+    await write(KEYS.prayerReads, reads);
+    await incrementBadge('daily_prayers');
+  }
+  if (title) await recordActivity('prayer', `Read ${title}`, `prayer:${slug}:${date}`);
+}
+
+export async function recordBibleChapter(bookId: string, chapter: number): Promise<void> {
+  const key = `${bookId}:${chapter}`;
+  const seen = await read<string>(KEYS.bibleChapters);
+  if (seen.includes(key)) return;
+  seen.push(key);
+  await write(KEYS.bibleChapters, seen);
+  await incrementBadge('whole_bible');
 }
 
 export async function getPrayerReadCount(): Promise<number> {
@@ -143,6 +200,7 @@ export async function addBookmark(pageIndex: number, label?: string): Promise<vo
     created_at: Date.now(),
   });
   await write(KEYS.bookmarks, list);
+  await recordActivity('bookmark', label ? `Saved ${label}` : `Saved page ${pageIndex + 1}`, `page:${pageIndex}`);
 }
 
 export async function listBookmarks(): Promise<{ id: string; page_index: number; label: string | null }[]> {
@@ -152,7 +210,7 @@ export async function listBookmarks(): Promise<{ id: string; page_index: number;
 
 // ─── Highlights ───────────────────────────────────────────────────────────────
 
-export async function addHighlight(book: string, chapter: number, verse: number, color: string): Promise<void> {
+export async function addHighlight(book: string, chapter: number, verse: number, color: string, bookName?: string): Promise<void> {
   const list = await read<Highlight>(KEYS.highlights);
   list.unshift({
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -163,6 +221,7 @@ export async function addHighlight(book: string, chapter: number, verse: number,
     created_at: Date.now(),
   });
   await write(KEYS.highlights, list);
+  await recordActivity('highlight', `Highlighted ${bookName ?? book} ${chapter}:${verse}`, `highlight:${book}:${chapter}:${verse}`);
 }
 
 export async function listHighlights(): Promise<{ id: string; book: string; chapter: number; verse: number; color: string }[]> {
@@ -220,9 +279,11 @@ export async function addPrayerBookmark(
     created_at: Date.now(),
   });
   await write(KEYS.prayerBookmarks, list);
+  await recordActivity('bookmark', `Saved ${title}`, `prayer-bookmark:${slug}`);
 }
 
 export async function removePrayerBookmark(slug: string): Promise<void> {
   const list = await read<PrayerBookmark>(KEYS.prayerBookmarks);
   await write(KEYS.prayerBookmarks, list.filter((b) => b.slug !== slug));
+  await removeActivity(`prayer-bookmark:${slug}`);
 }

@@ -423,11 +423,11 @@ export function getStrictnessLabel(s: FastStrictness): string {
 
 export function getStrictnessColor(s: FastStrictness): string {
   switch (s) {
-    case "strict": return "#8B0E1A";
-    case "moderate": return "#C97A24";
-    case "light": return "#D4AF37";
-    case "weekly": return "#276A3D";
-    case "free": return "#4A2C4E";
+    case "strict": return "#9B1C1C";
+    case "moderate": return "#7A3E28";
+    case "light": return "#6B4E2E";
+    case "weekly": return "#574C42";
+    case "free": return "#574C42";
   }
 }
 
