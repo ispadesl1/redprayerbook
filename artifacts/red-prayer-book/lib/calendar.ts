@@ -181,9 +181,13 @@ export function saintOfTheDay(day: LiturgicalDay): string {
 }
 
 const LORDLY_FEAST = /\b(lord|christ|theotokos|resurrection|nativity|theophany|pentecost|ascension|cross|transfiguration|entry|meeting|annunciation|dormition)\b/i;
+const SAINT_TITLE = /^(?:holy\s+)?(?:apostle|hieromartyr|martyr|righteous|venerable|ven\.?|prophet|st\.?|saint|holy)\b/i;
+const KINSHIP = /\b(?:brother|kinsman|mother) of\b/i;
 
 export function isFeastOfTheDay(name: string): boolean {
-  return LORDLY_FEAST.test(name);
+  const text = name.trim();
+  if (!text || SAINT_TITLE.test(text) || KINSHIP.test(text)) return false;
+  return LORDLY_FEAST.test(text);
 }
 
 export function commemorationLabel(name: string): string {
@@ -245,6 +249,12 @@ const PLACE_SKIP = new Set([
   "head",
   "flesh",
   "image",
+  "archangel",
+  "heaven",
+  "powers",
+  "host",
+  "captains",
+  "seventy",
 ]);
 
 function placesOf(value: string): Set<string> {

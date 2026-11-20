@@ -14,8 +14,7 @@ import { Stack, router, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Platform, View } from "react-native";
+import { Platform, Pressable, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -23,7 +22,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { usePalette } from "@/hooks/usePalette";
 import { initNotifications } from "@/lib/notifications";
-import { usePrefs } from "@/lib/prefs";
+import { loadPrefs, usePrefs } from "@/lib/prefs";
+import { fonts } from "@/theme/typography";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -63,10 +63,33 @@ function RootLayoutNav() {
   );
 }
 
+function SettingsUnread({ onRetry }: { onRetry: () => void }) {
+  const C = usePalette();
+  return (
+    <View style={{ flex: 1, backgroundColor: C.paper, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
+      <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 22, lineHeight: 28 }}>✠</Text>
+      <Text style={{ fontFamily: fonts.medium, fontSize: 28, lineHeight: 34, color: C.ink, textAlign: "center", marginTop: 16 }}>
+        Your settings could not be read
+      </Text>
+      <Text style={{ fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, color: C.ink2, textAlign: "center", marginTop: 12 }}>
+        Nothing was changed. Try again to read what is already stored.
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Try again"
+        onPress={onRetry}
+        style={{ marginTop: 28, minHeight: 48, minWidth: 120, paddingHorizontal: 22, backgroundColor: C.rubric, alignItems: "center", justifyContent: "center" }}
+      >
+        <Text style={{ color: C.onRubric, fontFamily: fonts.semibold, fontSize: 18 }}>Try again</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export default function RootLayout() {
   const C = usePalette();
   const appearance = usePrefs((state) => state.appearance);
-  const hydrated = usePrefs((state) => state.hydrated);
+  const prefsRead = usePrefs((state) => state.prefsRead);
   const [fontsLoaded, fontError] = useFonts({
     EBGaramond_400Regular,
     EBGaramond_400Regular_Italic,
@@ -81,36 +104,7 @@ export default function RootLayout() {
   const notifListenerRef = useRef<{ remove: () => void } | null>(null);
 
   useEffect(() => {
-    const finish = () => usePrefs.setState({ hydrated: true });
-    const unsub = usePrefs.persist.onFinishHydration(finish);
-    if (usePrefs.persist.hasHydrated()) finish();
-    const fallback = setTimeout(async () => {
-      if (usePrefs.persist.hasHydrated()) return;
-      try {
-        const raw = await AsyncStorage.getItem("rpb:prefs");
-        if (raw) {
-          const parsed = JSON.parse(raw) as { state?: Record<string, unknown> };
-          const saved = parsed.state ?? {};
-          usePrefs.setState({
-            appearance: saved.appearance === "night" ? "night" : "light",
-            calendarStyle: saved.calendarStyle === "old" ? "old" : "new",
-            readStep: typeof saved.readStep === "number" ? saved.readStep : 0,
-            ruleChecks: saved.ruleChecks && typeof saved.ruleChecks === "object" ? (saved.ruleChecks as Record<string, string[]>) : {},
-            displayName: typeof saved.displayName === "string" ? saved.displayName : "",
-            onboardingDone: saved.onboardingDone === true,
-            hydrated: true,
-          });
-          return;
-        }
-      } catch {
-        // Storage was unreadable, so this is treated as a first launch.
-      }
-      usePrefs.setState({ hydrated: true });
-    }, 2500);
-    return () => {
-      unsub();
-      clearTimeout(fallback);
-    };
+    loadPrefs();
   }, []);
 
   useEffect(() => {
@@ -150,7 +144,15 @@ export default function RootLayout() {
     }
   };
 
-  if ((!fontsLoaded && !fontError) || !hydrated) return null;
+  if (!fontsLoaded && !fontError) return null;
+  if (prefsRead === "failed") {
+    return (
+      <SafeAreaProvider>
+        <SettingsUnread onRetry={() => loadPrefs()} />
+      </SafeAreaProvider>
+    );
+  }
+  if (prefsRead !== "ready") return null;
 
   return (
     <SafeAreaProvider>

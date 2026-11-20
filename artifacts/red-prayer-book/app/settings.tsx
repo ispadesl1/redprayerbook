@@ -196,16 +196,18 @@ export default function Settings() {
         >
           <Text style={{ color: C.rubric, fontFamily: fonts.semibold, fontSize: 18 }}>Save name</Text>
         </Pressable>
-        {savedAt ? (
-          <Animated.Text
-            accessibilityLiveRegion="polite"
-            accessibilityRole="text"
-            {...({ role: "status" } as object)}
-            style={[{ fontFamily: fonts.italic, fontSize: 16, color: C.ink2, marginTop: 4 }, savedStyle]}
-          >
-            Saved
-          </Animated.Text>
-        ) : null}
+        <View style={{ minHeight: 25, marginTop: 4, justifyContent: "center" }}>
+          {savedAt ? (
+            <Animated.Text
+              accessibilityLiveRegion="polite"
+              accessibilityRole="text"
+              {...({ role: "status" } as object)}
+              style={[{ fontFamily: fonts.italic, fontSize: 16, lineHeight: 22, color: C.ink2 }, savedStyle]}
+            >
+              Saved
+            </Animated.Text>
+          ) : null}
+        </View>
 
         <View style={{ marginTop: 28 }}>
         <SmallCaps>Appearance</SmallCaps>

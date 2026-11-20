@@ -115,6 +115,13 @@ export default function Onboarding() {
         accessibilityRole="progressbar"
         accessibilityLabel="Welcome progress"
         accessibilityValue={{ min: 1, max: DOTS, now: stepNum + 1 }}
+        {...(Platform.OS === "web"
+          ? ({
+              "aria-valuemin": 1,
+              "aria-valuemax": DOTS,
+              "aria-valuenow": stepNum + 1,
+            } as object)
+          : null)}
         style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 24 }}
       >
         {Array.from({ length: DOTS }, (_, index) => (
