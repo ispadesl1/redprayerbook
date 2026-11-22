@@ -368,7 +368,7 @@ export default function CompanionScreen() {
               maxHeight: 120,
               ...(Platform.OS === "web" ? ({ outline: "none" } as object) : null),
             }}
-            placeholder="Ask Father Seraphim…"
+            placeholder="Ask Seraphim…"
             placeholderTextColor={C.textMuted}
             value={input}
             onChangeText={setInput}
