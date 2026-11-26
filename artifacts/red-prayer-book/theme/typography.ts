@@ -1,0 +1,35 @@
+export const fonts = {
+  regular: "EBGaramond_400Regular",
+  medium: "EBGaramond_500Medium",
+  semibold: "EBGaramond_600SemiBold",
+  bold: "EBGaramond_700Bold",
+  italic: "EBGaramond_400Regular_Italic",
+  mediumItalic: "EBGaramond_500Medium_Italic",
+  semiboldItalic: "EBGaramond_600SemiBold_Italic",
+  display: "EBGaramond_500Medium",
+  serif: "EBGaramond_400Regular",
+  serifBold: "EBGaramond_700Bold",
+  serifMedium: "EBGaramond_500Medium",
+  serifLight: "EBGaramond_400Regular",
+  subhead: "EBGaramond_500Medium",
+  body: "EBGaramond_400Regular",
+  bodyMedium: "EBGaramond_500Medium",
+  bodySemi: "EBGaramond_600SemiBold",
+  bodyBold: "EBGaramond_700Bold",
+};
+
+export const type = {
+  h1: { fontFamily: fonts.medium, fontSize: 34, lineHeight: 40 },
+  h2: { fontFamily: fonts.medium, fontSize: 26, lineHeight: 32 },
+  h3: { fontFamily: fonts.medium, fontSize: 21, lineHeight: 28 },
+  body: { fontFamily: fonts.regular, fontSize: 18, lineHeight: 28 },
+  serifBody: { fontFamily: fonts.regular, fontSize: 20.5, lineHeight: 33 },
+  caption: { fontFamily: fonts.italic, fontSize: 16, lineHeight: 22 },
+  smallCaps: {
+    fontFamily: fonts.medium,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: 0.9,
+    fontVariant: ["small-caps" as const],
+  },
+} as const;
