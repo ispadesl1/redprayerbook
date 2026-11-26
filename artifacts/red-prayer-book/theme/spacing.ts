@@ -34,3 +34,15 @@ export const layout = {
   side: 260,
   marginalia: 280,
 };
+
+// Press and motion tokens from the mobile-ui-polish branch (PR #2), kept for
+// the PressableScale / FadeIn / IconButton primitives it added.
+export const hitTarget = 44;
+
+export const motion = {
+  pressInMs: 120,
+  pressOutMs: 140,
+  enterMs: 280,
+  staggerMs: 45,
+  scalePress: 0.97,
+};
