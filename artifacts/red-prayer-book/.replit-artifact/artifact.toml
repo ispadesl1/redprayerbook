@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "Red Prayer Book"
+version = "1.0.0"
+id = "artifacts/red-prayer-book"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/" ]
+localPort = 18180
+
+[services.development]
+run = "pnpm --filter @workspace/red-prayer-book run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/red-prayer-book", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/red-prayer-book", "run", "serve" ]
+
+[services.env]
+PORT = "18180"
+BASE_PATH = "/"

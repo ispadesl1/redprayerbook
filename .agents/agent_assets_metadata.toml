@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "_XZtJqNL4n4010vN84eCs"
+uri = "file://artifacts/red-prayer-book/assets/images/icon.png"
+type = "image"
+title = "red prayer book app icon"
+
+[[generated]]
+id = "fPtR9UbFhIedXEa90NXqg"
+uri = "file://artifacts/red-prayer-book/assets/images/splash.png"
+type = "image"
+title = "red prayer book splash"
+
+[[generated]]
+id = "Xqu8zDfJSZxdeXl6iulO3"
+uri = "file://artifacts/red-prayer-book/assets/images/saint-nicholas.png"
+type = "image"
+title = "saint nicholas orthodox icon"
