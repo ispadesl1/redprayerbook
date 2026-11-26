@@ -1,6 +1,7 @@
 import { Pressable, Text } from 'react-native';
 import { colors } from '@/theme/colors';
 import { radii } from '@/theme/spacing';
+import { fonts } from '@/theme/typography';
 
 export function QuickTile({
   glyph,
@@ -30,10 +31,10 @@ export function QuickTile({
       <Text
         style={{
           color: colors.sacredGold,
+          fontFamily: fonts.semibold,
           fontSize: 10,
           letterSpacing: 1.4,
           textAlign: 'center',
-          fontWeight: '600',
           textTransform: 'uppercase',
         }}
       >

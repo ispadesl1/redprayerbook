@@ -5,10 +5,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { View } from 'react-native';
 import { StaticPage } from './StaticPage';
-import { colors } from '@/theme/colors';
 
 type Props = {
   progress: SharedValue<number>;
+  direction: SharedValue<number>;
   frontIndex: number;
   backIndex: number;
   width: number;
@@ -17,13 +17,15 @@ type Props = {
 
 export function CurlingPage({
   progress,
+  direction,
   frontIndex,
   backIndex,
   width,
   height,
 }: Props) {
   const frontStyle = useAnimatedStyle(() => {
-    const angle = interpolate(progress.value, [0, 1], [0, -180]);
+    const sign = direction.value < 0 ? 1 : -1;
+    const angle = interpolate(progress.value, [0, 1], [0, sign * 180]);
     return {
       transform: [{ perspective: 1200 }, { rotateY: `${angle}deg` }],
       opacity: progress.value < 0.5 ? 1 : 0,
@@ -31,7 +33,8 @@ export function CurlingPage({
   });
 
   const backStyle = useAnimatedStyle(() => {
-    const angle = interpolate(progress.value, [0, 1], [180, 0]);
+    const sign = direction.value < 0 ? 1 : -1;
+    const angle = interpolate(progress.value, [0, 1], [sign * -180, 0]);
     return {
       transform: [{ perspective: 1200 }, { rotateY: `${angle}deg` }],
       opacity: progress.value >= 0.5 ? 1 : 0,
@@ -53,7 +56,7 @@ export function CurlingPage({
             top: 0,
             bottom: 0,
             left: 0,
-            backgroundColor: colors.deepOnyx,
+            backgroundColor: 'rgba(31,26,22,0.35)',
           },
           shadowStyle,
         ]}

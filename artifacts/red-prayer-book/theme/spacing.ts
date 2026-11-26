@@ -10,19 +10,27 @@ export const spacing = {
 };
 
 export const radii = {
-  s: 6,
-  m: 12,
-  l: 18,
-  xl: 24,
-  pill: 999,
+  s: 2,
+  m: 2,
+  l: 2,
+  xl: 2,
+  pill: 2,
 };
 
 export const shadows = {
   card: {
-    shadowColor: '#0E0E10',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowColor: "transparent",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
+};
+
+export const layout = {
+  wide: 1100,
+  margin: 1320,
+  column: 640,
+  side: 260,
+  marginalia: 280,
 };

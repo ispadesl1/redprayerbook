@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,11 +14,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { colors as C } from "@/theme/colors";
-import { spacing, radii } from "@/theme/spacing";
+import { ServiceConnect } from "@/components/ServiceConnect";
+import { usePalette } from "@/hooks/usePalette";
 import { savePrayerIntention } from "@/lib/db";
+import { goBack } from "@/lib/navigation";
+import { apiBase, probeService, responseIsUnconfigured, type ServiceState } from "@/lib/service";
+import { fonts } from "@/theme/typography";
+import { spacing } from "@/theme/spacing";
 
-const API_BASE = `${process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : ""}/api`;
+const API_BASE = apiBase() ?? "";
 
 const EXAMPLE_INTENTIONS = [
   "for my sick mother's healing",
@@ -32,12 +36,30 @@ const EXAMPLE_INTENTIONS = [
 type Stage = "input" | "composing" | "result";
 
 export default function IntentionScreen() {
+  const C = usePalette();
   const [stage, setStage] = useState<Stage>("input");
   const [intention, setIntention] = useState("");
   const [prayerText, setPrayerText] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [inputFocused, setInputFocused] = useState(true);
+  const [service, setService] = useState<ServiceState>(apiBase() ? "checking" : "connect");
+  const [composeFailed, setComposeFailed] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    let cancel = false;
+    if (!apiBase()) {
+      setService("connect");
+      return;
+    }
+    probeService().then((next) => {
+      if (!cancel) setService(next);
+    });
+    return () => {
+      cancel = true;
+    };
+  }, []);
 
   const composePrayer = useCallback(async (text: string) => {
     if (!text.trim()) return;
@@ -45,6 +67,7 @@ export default function IntentionScreen() {
     setPrayerText("");
     setStreaming(true);
     setSaved(false);
+    setComposeFailed(false);
 
     try {
       const res = await fetch(`${API_BASE}/anthropic/compose-prayer`, {
@@ -53,7 +76,15 @@ export default function IntentionScreen() {
         body: JSON.stringify({ intention: text.trim() }),
       });
 
-      if (!res.ok || !res.body) throw new Error("Stream failed");
+      if (!res.ok || !res.body) {
+        if (await responseIsUnconfigured(res)) {
+          setService("connect");
+        } else {
+          setComposeFailed(true);
+        }
+        setStage("input");
+        return;
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -81,7 +112,7 @@ export default function IntentionScreen() {
         }
       }
     } catch {
-      Alert.alert("Error", "Could not compose the prayer. Please try again.");
+      setComposeFailed(true);
       setStage("input");
     } finally {
       setStreaming(false);
@@ -106,6 +137,9 @@ export default function IntentionScreen() {
     setSaved(false);
   }, []);
 
+  if (service === "checking") return <ServiceConnect title="Compose a prayer" checking />;
+  if (service !== "ready") return <ServiceConnect title="Compose a prayer" />;
+
   return (
     <SafeAreaView edges={["top", "bottom"]} style={{ flex: 1, backgroundColor: C.surfaceDeep }}>
       {/* Header */}
@@ -121,31 +155,18 @@ export default function IntentionScreen() {
         }}
       >
         <Pressable
-          onPress={() => router.back()}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, marginRight: spacing.m })}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          onPress={goBack}
+          style={({ pressed }) => ({ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.6 : 1 })}
         >
-          <MaterialCommunityIcons name="chevron-left" size={26} color={C.sacredGold} />
+          <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 22, lineHeight: 26 }}>‹</Text>
         </Pressable>
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: C.byzantineCrimson,
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1,
-            borderColor: C.sacredGold,
-            marginRight: spacing.s,
-          }}
-        >
-          <MaterialCommunityIcons name="hands-pray" size={17} color={C.sacredGold} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16 }}>
-            Compose a Prayer
+        <View style={{ flex: 1, paddingLeft: 8 }}>
+          <Text style={{ color: C.ink, fontFamily: fonts.medium, fontSize: 22, lineHeight: 28 }}>
+            Compose a prayer
           </Text>
-          <Text style={{ color: C.textMuted, fontSize: 11 }}>Your personal intention, in Orthodox form</Text>
+          <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 16, lineHeight: 22 }}>For what you are carrying</Text>
         </View>
         {stage === "result" && (
           <Pressable
@@ -169,70 +190,35 @@ export default function IntentionScreen() {
           >
             {/* Instruction */}
             <View style={{ alignItems: "center", marginBottom: spacing.l }}>
-              <View
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 32,
-                  backgroundColor: C.byzantineCrimson,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 2,
-                  borderColor: C.sacredGold,
-                  marginBottom: spacing.m,
-                }}
-              >
-                <MaterialCommunityIcons name="hands-pray" size={28} color={C.sacredGold} />
-              </View>
-              <Text
-                style={{
-                  color: C.sacredGold,
-                  fontFamily: "serif",
-                  fontWeight: "700",
-                  fontSize: 20,
-                  textAlign: "center",
-                  marginBottom: spacing.xs,
-                }}
-              >
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18, lineHeight: 24 }}>✠</Text>
+              <Text style={{ color: C.ink, fontFamily: fonts.medium, fontSize: 28, lineHeight: 34, textAlign: "center", marginTop: 12 }}>
                 What is on your heart?
               </Text>
-              <Text
-                style={{
-                  color: C.textSecondary,
-                  fontFamily: "serif",
-                  fontSize: 14,
-                  textAlign: "center",
-                  lineHeight: 22,
-                }}
-              >
-                Describe your intention and Father Seraphim will compose an Orthodox prayer for you.
+              <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, textAlign: "center", marginTop: 8 }}>
+                Write an intention, and a prayer is composed from it.
               </Text>
             </View>
 
             {/* Text input */}
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: C.sacredGold,
-                borderRadius: radii.m,
-                backgroundColor: C.surface,
-                marginBottom: spacing.m,
-                padding: spacing.m,
-              }}
-            >
+            <View style={{ marginBottom: spacing.m, paddingVertical: 4 }}>
               <TextInput
                 style={{
-                  color: C.textPrimary,
-                  fontFamily: "serif",
-                  fontSize: 16,
-                  lineHeight: 24,
-                  minHeight: 80,
+                  color: C.ink,
+                  fontFamily: fonts.regular,
+                  fontSize: 18,
+                  lineHeight: 28,
+                  minHeight: 88,
                   textAlignVertical: "top",
+                  borderBottomWidth: inputFocused ? 2 : 1,
+                  borderBottomColor: inputFocused ? C.rubric : C.ink2,
+                  ...(Platform.OS === "web" ? ({ outline: "none" } as object) : null),
                 }}
                 placeholder="e.g. for healing of my father's illness..."
                 placeholderTextColor={C.textMuted}
                 value={intention}
                 onChangeText={setIntention}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
                 multiline
                 autoFocus
               />
@@ -243,63 +229,53 @@ export default function IntentionScreen() {
               onPress={() => composePrayer(intention)}
               disabled={!intention.trim()}
               style={({ pressed }) => ({
-                backgroundColor:
-                  !intention.trim() ? C.surfaceElevated : C.byzantineCrimson,
-                borderWidth: 1,
-                borderColor:
-                  !intention.trim() ? C.hairline : C.sacredGold,
-                borderRadius: radii.pill,
-                paddingVertical: spacing.m,
+                backgroundColor: !intention.trim() ? "transparent" : C.rubric,
+                minHeight: 48,
                 alignItems: "center",
+                justifyContent: "center",
                 marginBottom: spacing.l,
-                opacity: pressed ? 0.8 : 1,
+                opacity: pressed ? 0.85 : 1,
               })}
             >
               <Text
                 style={{
-                  color: !intention.trim() ? C.textMuted : C.sacredGold,
-                  fontFamily: "serif",
-                  fontWeight: "700",
-                  fontSize: 16,
+                  color: !intention.trim() ? C.ink2 : C.onRubric,
+                  fontFamily: fonts.semibold,
+                  fontSize: 18,
                 }}
               >
                 Compose Prayer
               </Text>
             </Pressable>
+            {composeFailed ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Try again"
+                onPress={() => composePrayer(intention)}
+                style={{ minHeight: 44, justifyContent: "center", alignItems: "center", marginBottom: spacing.m }}
+              >
+                <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+              </Pressable>
+            ) : null}
 
             {/* Examples */}
-            <Text
-              style={{
-                color: C.textMuted,
-                fontSize: 12,
-                fontWeight: "600",
-                letterSpacing: 0.8,
-                textTransform: "uppercase",
-                marginBottom: spacing.s,
-              }}
-            >
+            <Text style={{ color: C.rubric, fontFamily: fonts.medium, fontSize: 16, lineHeight: 22, fontVariant: ["small-caps"], letterSpacing: 0.6, marginBottom: 4 }}>
               Examples
             </Text>
-            <View style={{ gap: spacing.xs }}>
+            <View>
               {EXAMPLE_INTENTIONS.map((ex) => (
                 <Pressable
                   key={ex}
                   onPress={() => setIntention(ex)}
                   style={({ pressed }) => ({
-                    flexDirection: "row",
-                    alignItems: "center",
-                    padding: spacing.m,
-                    borderRadius: radii.m,
-                    borderWidth: 1,
-                    borderColor: C.hairline,
-                    backgroundColor: pressed ? C.surface : C.surfaceElevated,
-                    gap: spacing.s,
+                    minHeight: 44,
+                    justifyContent: "center",
+                    borderBottomWidth: 1,
+                    borderBottomColor: C.rule,
+                    backgroundColor: pressed ? C.highlight : "transparent",
                   })}
                 >
-                  <MaterialCommunityIcons name="cross" size={14} color={C.sacredGold} />
-                  <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 14, flex: 1 }}>
-                    {ex}
-                  </Text>
+                  <Text style={{ color: C.ink, fontFamily: fonts.regular, fontSize: 18, lineHeight: 26 }}>{ex}</Text>
                 </Pressable>
               ))}
             </View>
@@ -312,8 +288,8 @@ export default function IntentionScreen() {
               style={{
                 width: 80,
                 height: 80,
-                borderRadius: 40,
-                backgroundColor: C.byzantineCrimson,
+                borderRadius: 0,
+                backgroundColor: "transparent",
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 2,
@@ -324,10 +300,10 @@ export default function IntentionScreen() {
               <MaterialCommunityIcons name="cross" size={36} color={C.sacredGold} />
             </View>
             <ActivityIndicator color={C.sacredGold} size="large" style={{ marginBottom: spacing.m }} />
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 18, textAlign: "center" }}>
+            <Text style={{ color: C.rubric, fontFamily: fonts.semibold, fontSize: 20, textAlign: "center" }}>
               Composing your prayer…
             </Text>
-            <Text style={{ color: C.textMuted, fontFamily: "serif", fontSize: 13, textAlign: "center", marginTop: spacing.s, lineHeight: 20 }}>
+            <Text style={{ color: C.ink2, fontFamily: fonts.italic, fontSize: 17, textAlign: "center", marginTop: spacing.s, lineHeight: 26 }}>
               "Ask, and it will be given to you; seek, and you will find." — Matthew 7:7
             </Text>
           </View>
@@ -352,36 +328,24 @@ export default function IntentionScreen() {
               }}
             >
               <MaterialCommunityIcons name="hands-pray" size={14} color={C.textMuted} />
-              <Text style={{ color: C.textMuted, fontFamily: "serif", fontSize: 13, fontStyle: "italic", flex: 1 }}>
+              <Text style={{ color: C.textMuted, fontFamily: fonts.regular, fontSize: 13, fontStyle: "italic", flex: 1 }}>
                 {intention.trim()}
               </Text>
             </View>
 
             {/* Ornamental top */}
-            <Text style={{ color: C.sacredGold, textAlign: "center", fontSize: 20, marginBottom: spacing.m, letterSpacing: 8 }}>
-              ✦ ✟ ✦
+            <Text style={{ color: C.rubric, fontFamily: fonts.regular, textAlign: "center", fontSize: 18, lineHeight: 24, marginBottom: spacing.m }}>
+              ✠
             </Text>
 
             {/* Prayer text */}
-            <View
-              style={{
-                backgroundColor: C.surfaceElevated,
-                borderRadius: radii.m,
-                borderWidth: 1,
-                borderColor: C.hairline,
-                borderLeftWidth: 3,
-                borderLeftColor: C.byzantineCrimson,
-                padding: spacing.l,
-                marginBottom: spacing.l,
-              }}
-            >
+            <View style={{ marginBottom: spacing.l }}>
               <Text
                 style={{
-                  color: C.textPrimary,
-                  fontFamily: "serif",
-                  fontSize: 16,
-                  lineHeight: 28,
-                  fontStyle: "italic",
+                  color: C.ink,
+                  fontFamily: fonts.regular,
+                  fontSize: 20,
+                  lineHeight: 32,
                 }}
               >
                 {prayerText}
@@ -391,8 +355,8 @@ export default function IntentionScreen() {
 
             {/* Ornamental bottom */}
             {!streaming && (
-              <Text style={{ color: C.sacredGold, textAlign: "center", fontSize: 20, marginBottom: spacing.l, letterSpacing: 8 }}>
-                ✦ ✟ ✦
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, textAlign: "center", fontSize: 18, lineHeight: 24, marginBottom: spacing.l }}>
+                ✠
               </Text>
             )}
 
@@ -403,29 +367,18 @@ export default function IntentionScreen() {
                   onPress={handleSave}
                   disabled={saved}
                   style={({ pressed }) => ({
-                    flexDirection: "row",
+                    minHeight: 48,
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: spacing.s,
-                    paddingVertical: spacing.m,
-                    borderRadius: radii.pill,
-                    borderWidth: 1,
-                    borderColor: saved ? C.hairline : C.sacredGold,
-                    backgroundColor: saved ? C.surfaceElevated : C.byzantineCrimson,
-                    opacity: pressed ? 0.8 : 1,
+                    backgroundColor: saved ? "transparent" : C.rubric,
+                    opacity: pressed ? 0.85 : 1,
                   })}
                 >
-                  <MaterialCommunityIcons
-                    name={saved ? "check" : "bookmark-outline"}
-                    size={18}
-                    color={saved ? C.textMuted : C.sacredGold}
-                  />
                   <Text
                     style={{
-                      color: saved ? C.textMuted : C.sacredGold,
-                      fontFamily: "serif",
-                      fontWeight: "700",
-                      fontSize: 15,
+                      color: saved ? C.ink2 : C.onRubric,
+                      fontFamily: fonts.semibold,
+                      fontSize: 18,
                     }}
                   >
                     {saved ? "Saved to Bookmarks" : "Save to Bookmarks"}
@@ -435,20 +388,13 @@ export default function IntentionScreen() {
                 <Pressable
                   onPress={handleShare}
                   style={({ pressed }) => ({
-                    flexDirection: "row",
+                    minHeight: 44,
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: spacing.s,
-                    paddingVertical: spacing.m,
-                    borderRadius: radii.pill,
-                    borderWidth: 1,
-                    borderColor: C.hairline,
-                    backgroundColor: C.surfaceElevated,
                     opacity: pressed ? 0.7 : 1,
                   })}
                 >
-                  <MaterialCommunityIcons name="share-outline" size={18} color={C.textSecondary} />
-                  <Text style={{ color: C.textSecondary, fontFamily: "serif", fontWeight: "600", fontSize: 15 }}>
+                  <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>
                     Share Prayer
                   </Text>
                 </Pressable>
@@ -465,7 +411,7 @@ export default function IntentionScreen() {
                   })}
                 >
                   <MaterialCommunityIcons name="refresh" size={16} color={C.textMuted} />
-                  <Text style={{ color: C.textMuted, fontFamily: "serif", fontSize: 14 }}>
+                  <Text style={{ color: C.textMuted, fontFamily: fonts.regular, fontSize: 14 }}>
                     Compose Another
                   </Text>
                 </Pressable>

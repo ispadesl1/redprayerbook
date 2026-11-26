@@ -1,524 +1,360 @@
 import { useEffect, useState } from "react";
-import { ScrollView, View, Text, Pressable, Image } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Image, Pressable, Share, Text, View } from "react-native";
 import { router } from "expo-router";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { CrossDivider } from "@/components/ui/CrossDivider";
 import { BadgeItem } from "@/components/ui/BadgeItem";
-import { colors as C } from "@/theme/colors";
-import { spacing, radii } from "@/theme/spacing";
-import { BADGE_DEFS, getAllBadgeProgress } from "@/lib/badges";
-import { recordStreakToday } from "@/lib/db";
-import { incrementBadge } from "@/lib/badges";
-import type { BadgeDef } from "@/lib/badges";
-import { getCurrentHour, formatTime, type CanonicalHour } from "@/lib/canonicalHours";
-import { getTodayFastStatus, getPeriodProgress, getStrictnessColor } from "@/lib/fasting";
+import {
+  DropCap,
+  HourCheck,
+  ManuscriptScroll,
+  Ornament,
+  SmallCaps,
+  TocRow,
+  focusRing,
+  onSpaceKey,
+  useFrame,
+} from "@/components/ui/manuscript";
+import { useLiturgicalDay } from "@/hooks/useCalendarData";
+import { usePalette } from "@/hooks/usePalette";
+import { useToday } from "@/hooks/useToday";
+import { badgeProgressForDisplay, getAllBadgeProgress, vespersDays, visibleBadgeDefs } from "@/lib/badges";
+import { commemorationLabel, fastLines, formatCivilDate, saintOfTheDay, seasonOfTheDay, type LiturgicalDay } from "@/lib/calendar";
+import { CANONICAL_HOURS, getCurrentHour, type CanonicalHour } from "@/lib/canonicalHours";
+import { getStreakData, recordStreakToday } from "@/lib/db";
+import { getPrayerBySlug } from "@/lib/prayers";
+import { isHourKept, localYmd, usePrefs } from "@/lib/prefs";
+import { fonts } from "@/theme/typography";
 
-type MCI = React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+const TODAYS_PRAYER =
+  "Lord, teach me to pray with my whole heart, and in Your will, not mine, be done.";
 
-function CanonicalHoursWidget() {
-  const [hour, setHour] = useState<CanonicalHour>(getCurrentHour);
-  const [clock, setClock] = useState(formatTime);
+const RULE_LINKS: { title: string; href: string; page?: string }[] = [
+  { title: "Morning Prayers", href: "/prayers/morning-trisagion", page: "p. 5" },
+  { title: "Evening Prayers", href: "/prayers/evening-trisagion", page: "p. 10" },
+  { title: "The Nicene Creed", href: "/prayers/the-creed", page: "p. 7" },
+  { title: "Psalm 50", href: "/prayers/psalm-50", page: "p. 27" },
+  { title: "Orthodox Calendar", href: "/calendar" },
+  { title: "Bookmarks", href: "/bookmarks" },
+  { title: "The printed book", href: "/book" },
+];
 
-  useEffect(() => {
-    const tick = () => {
-      setHour(getCurrentHour());
-      setClock(formatTime());
-    };
-    const id = setInterval(tick, 60000);
-    return () => clearInterval(id);
-  }, []);
+const NEEDS: { title: string; slug: string }[] = [
+  { title: "Prayer for God's Will", slug: "morning-prayer-grant-me" },
+  { title: "A Prayer of Husband and Wife", slug: "for-married" },
+  { title: "A Prayer of Single Persons", slug: "for-single" },
+  { title: "Before Commencing Any Task", slug: "before-work" },
+  { title: "A Prayer in Time of Trouble", slug: "in-time-of-trouble" },
+];
 
-  return (
-    <Pressable
-      onPress={() => router.push(`/hours?id=${hour.id}`)}
-      style={({ pressed }) => ({
-        marginHorizontal: spacing.m,
-        marginBottom: spacing.m,
-        borderRadius: radii.l,
-        borderWidth: 1,
-        borderColor: hour.accentColor,
-        overflow: "hidden",
-        opacity: pressed ? 0.85 : 1,
-      })}
-    >
-      {/* Accent top strip */}
-      <View style={{ backgroundColor: hour.accentColor, paddingHorizontal: spacing.m, paddingVertical: spacing.s, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-          <MaterialCommunityIcons name={hour.icon as MCI} size={14} color="rgba(245,235,221,0.9)" />
-          <Text style={{ color: "rgba(245,235,221,0.9)", fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" }}>
-            Current Hour of Prayer
-          </Text>
-        </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.ivoryVellum, opacity: 0.7 }} />
-          <Text style={{ color: "rgba(245,235,221,0.7)", fontSize: 11 }}>{clock}</Text>
-        </View>
-      </View>
-
-      {/* Body */}
-      <View style={{ backgroundColor: C.surfaceElevated, padding: spacing.m, flexDirection: "row", alignItems: "center", gap: spacing.m }}>
-        <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: hour.accentColor, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" }}>
-          <MaterialCommunityIcons name={hour.icon as MCI} size={24} color={C.ivoryVellum} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 18 }}>
-            {hour.name}
-          </Text>
-          <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 12, fontStyle: "italic", marginTop: 2 }}>
-            {hour.subtitle}
-          </Text>
-          <Text style={{ color: C.textMuted, fontSize: 11, marginTop: 4, lineHeight: 16 }} numberOfLines={2}>
-            {hour.shortPrayer}
-          </Text>
-        </View>
-        <MaterialCommunityIcons name="chevron-right" size={20} color={C.sacredGold} />
-      </View>
-
-      {/* Time label footer */}
-      <View style={{ backgroundColor: C.surface, paddingHorizontal: spacing.m, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-        <MaterialCommunityIcons name="clock-outline" size={11} color={C.textMuted} />
-        <Text style={{ color: C.textMuted, fontSize: 11 }}>{hour.timeLabel}</Text>
-        <Text style={{ color: C.hairline, marginHorizontal: 4 }}>·</Text>
-        <Text style={{ color: C.textMuted, fontFamily: "serif", fontStyle: "italic", fontSize: 11 }}>{hour.greekName}</Text>
-      </View>
-    </Pressable>
-  );
+function isWonderworker(name: string): boolean {
+  return /Nicholas.*(Myra|Wonderworker)|Wonderworker.*Nicholas/i.test(name);
 }
 
-function FastingWidget() {
-  const status = getTodayFastStatus();
-  const color = getStrictnessColor(status.strictness);
-  const progress = status.period ? getPeriodProgress(status.period) : null;
-
+function HourAndFast({
+  hourId,
+  onHour,
+  day,
+  failed,
+  onRetry,
+}: {
+  hourId: string;
+  onHour: (id: string) => void;
+  day?: LiturgicalDay;
+  failed: boolean;
+  onRetry: () => void;
+}) {
+  const C = usePalette();
+  const hour = CANONICAL_HOURS.find((item) => item.id === hourId) ?? getCurrentHour();
+  const fast = day ? fastLines(day) : null;
   return (
-    <Pressable
-      onPress={() => router.push("/fasting")}
-      style={({ pressed }) => ({
-        marginHorizontal: spacing.m,
-        marginBottom: spacing.m,
-        borderRadius: radii.l,
-        borderWidth: 1,
-        borderColor: color,
-        overflow: "hidden",
-        opacity: pressed ? 0.85 : 1,
-      })}
-    >
-      {/* Header strip */}
-      <View style={{ backgroundColor: color, paddingHorizontal: spacing.m, paddingVertical: spacing.s, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
-          <MaterialCommunityIcons
-            name={status.isFastFree ? "party-popper" : status.isFasting ? "fish" : "information-outline"}
-            size={14}
-            color="rgba(245,235,221,0.9)"
-          />
-          <Text style={{ color: "rgba(245,235,221,0.9)", fontSize: 11, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" }}>
-            {status.isFastFree ? "Fast-Free Period" : status.isFasting ? "Fasting Today" : "Fasting Calendar"}
-          </Text>
-        </View>
-        <MaterialCommunityIcons name="chevron-right" size={16} color="rgba(245,235,221,0.7)" />
+    <View>
+      <SmallCaps>The hour</SmallCaps>
+      <Text style={{ fontFamily: fonts.medium, fontSize: 27, lineHeight: 32, color: C.ink, marginTop: 4 }}>
+        {hour.name}{" "}
+        <Text style={{ fontFamily: fonts.italic, fontSize: 19, color: C.ink2 }}>{hour.greekName}</Text>
+      </Text>
+      <Text style={{ fontFamily: fonts.italic, fontSize: 17, color: C.ink2, marginTop: 2 }}>
+        {hour.subtitle} · {hour.timeLabel}
+      </Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 10 }}>
+        {CANONICAL_HOURS.map((item) => {
+          const on = item.id === hour.id;
+          return (
+            <Pressable
+              key={item.id}
+              onPress={() => onHour(item.id)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              aria-pressed={on}
+              {...({ onKeyDown: onSpaceKey(() => onHour(item.id)) } as object)}
+              style={(state) => {
+                const focused = "focused" in state && Boolean((state as { focused?: boolean }).focused);
+                return {
+                  paddingVertical: 8,
+                  paddingHorizontal: 8,
+                  minHeight: 44,
+                  justifyContent: "center" as const,
+                  backgroundColor: state.pressed ? C.highlight : "transparent",
+                  ...focusRing(C.rubric, focused),
+                };
+              }}
+            >
+              <Text
+                style={{
+                  fontFamily: fonts.medium,
+                  fontSize: 16,
+                  color: on ? C.rubric : C.ink2,
+                  fontVariant: ["small-caps"],
+                  letterSpacing: 0.4,
+                  borderBottomWidth: on ? 1 : 0,
+                  borderBottomColor: C.rubric,
+                }}
+              >
+                {item.name}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
+      <Text style={{ fontFamily: fonts.italic, fontSize: 19, lineHeight: 28, color: C.ink, marginTop: 8 }}>
+        “{hour.verse}”
+      </Text>
+      <Text style={{ fontFamily: fonts.regular, fontSize: 15, color: C.ink2, marginTop: 2 }}>{hour.verseRef}</Text>
+      <Pressable onPress={() => router.push(`/hours?id=${hour.id}` as never)} style={{ minHeight: 44, justifyContent: "center" }}>
+        <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Pray {hour.name} ›</Text>
+      </Pressable>
 
-      {/* Body */}
-      <View style={{ backgroundColor: C.surfaceElevated, padding: spacing.m }}>
-        <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "700", fontSize: 16, marginBottom: 2 }}>
-          {status.label}
-        </Text>
-        <Text style={{ color: C.textSecondary, fontFamily: "serif", fontSize: 12, marginBottom: status.rules.length ? spacing.xs : 0 }}>
-          {status.sublabel}
-        </Text>
-        {status.rules[0] ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs, marginTop: 4 }}>
-            <MaterialCommunityIcons
-              name={status.isFastFree ? "check-circle-outline" : "circle-small"}
-              size={13}
-              color={color}
-            />
-            <Text style={{ color: C.textMuted, fontSize: 12, flex: 1 }} numberOfLines={1}>
-              {status.rules[0]}
+      <Ornament />
+      <SmallCaps>The fast</SmallCaps>
+      <View style={{ minHeight: 72, marginTop: 4 }}>
+        {day ? (
+          <>
+            <Text style={{ fontFamily: fonts.regular, fontSize: 19, lineHeight: 28, color: C.ink }}>
+              {fast?.title || "No fast is listed for this day."}
             </Text>
-          </View>
-        ) : null}
-
-        {/* Progress bar for active period */}
-        {progress && !status.isFastFree && (
-          <View style={{ marginTop: spacing.s }}>
-            <View style={{ height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.1)" }}>
-              <View style={{ width: `${Math.round(progress.pct * 100)}%`, height: 3, borderRadius: 2, backgroundColor: color }} />
-            </View>
-            <Text style={{ color: C.textMuted, fontSize: 10, marginTop: 2 }}>
-              {progress.daysLeft} day{progress.daysLeft === 1 ? "" : "s"} remaining · {Math.round(progress.pct * 100)}% complete
+            {fast?.detail ? (
+              <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 26, color: C.ink2, marginTop: 2 }}>{fast.detail}</Text>
+            ) : null}
+          </>
+        ) : failed ? (
+          <>
+            <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 26, color: C.ink2 }}>
+              The fast for this calendar isn’t available.
             </Text>
-          </View>
+            <Pressable onPress={onRetry} style={{ minHeight: 44, justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 26, color: C.ink2 }}>Loading the fast…</Text>
         )}
       </View>
-    </Pressable>
+      <Pressable onPress={() => router.push("/fasting" as never)} accessibilityRole="link" style={{ minHeight: 44, justifyContent: "center" }}>
+        <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>The book’s fasting calendar ›</Text>
+      </Pressable>
+    </View>
   );
 }
 
-const TILES: { icon: MCI; label: string; target: string }[] = [
-  { icon: "weather-sunny", label: "Morning\nPrayer", target: "morning" },
-  { icon: "weather-night", label: "Evening\nPrayer", target: "evening" },
-  { icon: "book-open-variant", label: "Daily\nReading", target: "reading" },
-  { icon: "calendar-month", label: "Orthodox\nCalendar", target: "calendar" },
-  { icon: "account-star", label: "Lives of\nSaints", target: "saints" },
-  { icon: "bookmark-multiple", label: "Bookmarks", target: "bookmarks" },
-];
-
-const CATEGORIES = [
-  { label: "Prayer for God's Will", slug: "morning-prayer-grant-me" },
-  { label: "A Prayer of Husband and Wife", slug: "for-married" },
-  { label: "A Prayer of Single Persons", slug: "for-single" },
-  { label: "Before Commencing Any Task", slug: "before-work" },
-  { label: "A Prayer in Time of Trouble", slug: "in-time-of-trouble" },
-];
+function SaintPlate({
+  name,
+  season,
+  loading,
+  failed,
+  onRetry,
+}: {
+  name: string;
+  season?: string;
+  loading: boolean;
+  failed: boolean;
+  onRetry: () => void;
+}) {
+  const C = usePalette();
+  const showIcon = isWonderworker(name);
+  return (
+    <View style={{ width: 156, minHeight: 140 }}>
+      <SmallCaps size={14}>{name ? commemorationLabel(name) : "Saint of the day"}</SmallCaps>
+      {showIcon ? (
+        <View style={{ marginTop: 8 }}>
+          <Image
+            source={require("@/assets/images/saint-nicholas.png")}
+            style={{ width: 96, height: 112, borderWidth: 1, borderColor: C.rule2 }}
+            resizeMode="cover"
+            accessibilityLabel="Icon of St Nicholas the Wonderworker"
+          />
+          <Text style={{ fontFamily: fonts.medium, fontSize: 16, lineHeight: 21, color: C.ink, marginTop: 6 }}>
+            {name}
+          </Text>
+          {season ? (
+            <Text style={{ fontFamily: fonts.italic, fontSize: 15, lineHeight: 20, color: C.ink2, marginTop: 6 }}>{season}</Text>
+          ) : null}
+        </View>
+      ) : (
+        <View style={{ marginTop: 8, minHeight: 96 }}>
+          <Text style={{ fontFamily: fonts.regular, fontSize: 18, lineHeight: 22, color: C.rubric }}>✠</Text>
+          <Text style={{ fontFamily: fonts.medium, fontSize: 20, lineHeight: 26, color: C.ink, marginTop: 4 }}>
+            {name || (failed ? "Commemorations unavailable" : " ")}
+          </Text>
+          {season ? (
+            <Text style={{ fontFamily: fonts.italic, fontSize: 15, lineHeight: 20, color: C.ink2, marginTop: 6 }}>{season}</Text>
+          ) : null}
+          {failed && !name ? (
+            <Pressable onPress={onRetry} style={{ minHeight: 44, justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 16 }}>Try again</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function Home() {
-  const [badgeProgress, setBadgeProgress] = useState<Record<string, number>>({});
+  const C = usePalette();
+  const { showMargin } = useFrame();
+  const style = usePrefs((state) => state.calendarStyle);
+  const checks = usePrefs((state) => state.ruleChecks);
+  const toggleHour = usePrefs((state) => state.toggleHour);
+  const today = useToday();
+  const ymd = localYmd(today);
+  const [hourId, setHourId] = useState(getCurrentHour().id);
+  const [badges, setBadges] = useState<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
       await recordStreakToday();
-      await incrementBadge("daily_prayers", 1);
-      const p = await getAllBadgeProgress();
-      setBadgeProgress(p);
+      const [stored, streak] = await Promise.all([getAllBadgeProgress(), getStreakData()]);
+      setBadges(badgeProgressForDisplay(stored, { streak: streak.currentStreak, vespersDays: vespersDays(checks) }));
     })();
-  }, []);
+  }, [checks]);
 
-  const handleTilePress = (target: string) => {
-    if (target === "calendar") router.push("/(tabs)/calendar");
-    else if (target === "saints") router.push("/saints/nicholas");
-    else if (target === "bookmarks") router.push("/bookmarks");
-    else router.push(`/prayers/${target === "reading" ? "will" : target}`);
-  };
+  const dayQuery = useLiturgicalDay(today, style);
 
-  const TOP_BADGES = BADGE_DEFS.slice(0, 5);
+  const kept = CANONICAL_HOURS.filter((hour) => isHourKept(ymd, hour.id, checks)).length;
+  const aside = (
+    <HourAndFast
+      hourId={hourId}
+      onHour={setHourId}
+      day={dayQuery.data}
+      failed={dayQuery.isError && !dayQuery.data}
+      onRetry={() => dayQuery.refetch()}
+    />
+  );
+  const saintName = dayQuery.data ? saintOfTheDay(dayQuery.data) : "";
+  const seasonName = dayQuery.data ? seasonOfTheDay(dayQuery.data) : "";
 
   return (
-    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: C.surfaceDeep }}>
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Today's Prayer Card */}
-        <View
-          style={{
-            margin: spacing.m,
-            borderRadius: radii.l,
-            borderWidth: 1,
-            borderColor: C.sacredGold,
-            overflow: "hidden",
-            backgroundColor: C.byzantineCrimson,
-          }}
-        >
-          {/* Filigree corners */}
-          {[
-            { top: 6, left: 8 },
-            { top: 6, right: 8 },
-            { bottom: 6, left: 8 },
-            { bottom: 6, right: 8 },
-          ].map((pos, i) => (
-            <Text
-              key={i}
-              style={{
-                position: "absolute",
-                ...(pos as any),
-                color: C.sacredGold,
-                fontSize: 11,
-                zIndex: 2,
-              }}
-            >
-              ❦
-            </Text>
-          ))}
-
-          <View style={{ flexDirection: "row", minHeight: 160 }}>
-            {/* Saint icon */}
-            <View style={{ width: 130, backgroundColor: C.surfaceDeep }}>
-              <Image
-                source={require("@/assets/images/saint-nicholas.png")}
-                style={{ width: 130, height: "100%", minHeight: 160 }}
-                resizeMode="cover"
-              />
-            </View>
-
-            {/* Text */}
-            <View style={{ flex: 1, padding: spacing.m, justifyContent: "center" }}>
-              <Text
-                style={{
-                  fontFamily: "serif",
-                  fontWeight: "700",
-                  fontSize: 22,
-                  color: C.sacredGold,
-                  lineHeight: 26,
-                }}
-              >
-                Today's Prayer
-              </Text>
-              <Text
-                style={{
-                  fontFamily: "serif",
-                  fontStyle: "italic",
-                  fontSize: 13,
-                  color: C.ivoryVellum,
-                  lineHeight: 20,
-                  marginTop: spacing.xs,
-                }}
-              >
-                Lord, teach me to pray with my whole heart, and in Your will, not mine, be done.
-              </Text>
-              <View style={{ flexDirection: "row", alignItems: "center", marginTop: spacing.s }}>
-                <View style={{ flex: 1, height: 1, backgroundColor: C.sacredGold, opacity: 0.4 }} />
-                <Text style={{ color: C.sacredGold, marginHorizontal: 8, fontSize: 14 }}>✟</Text>
-                <View style={{ flex: 1, height: 1, backgroundColor: C.sacredGold, opacity: 0.4 }} />
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Canonical Hours Widget */}
-        <CanonicalHoursWidget />
-
-        {/* Fasting Widget */}
-        <FastingWidget />
-
-        {/* Quick Tiles 2×3 */}
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            paddingHorizontal: spacing.m,
-            gap: spacing.s,
-          }}
-        >
-          {TILES.map((t) => (
-            <Pressable
-              key={t.label}
-              onPress={() => handleTilePress(t.target)}
-              style={({ pressed }) => ({
-                width: "31%",
-                aspectRatio: 1,
-                backgroundColor: pressed ? C.surface : C.byzantineCrimson,
-                borderColor: C.sacredGold,
-                borderWidth: 1,
-                borderRadius: radii.m,
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                opacity: pressed ? 0.85 : 1,
-              })}
-            >
-              <MaterialCommunityIcons name={t.icon} size={26} color={C.sacredGold} />
-              <Text
-                style={{
-                  color: C.sacredGold,
-                  fontSize: 9.5,
-                  letterSpacing: 0.8,
-                  textAlign: "center",
-                  fontWeight: "700",
-                  textTransform: "uppercase",
-                  lineHeight: 13,
-                }}
-              >
-                {t.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <CrossDivider style={{ marginHorizontal: spacing.m, marginTop: spacing.xl }} />
-
-        {/* Prayer Categories */}
-        <Text
-          style={{
-            fontFamily: "serif",
-            fontWeight: "700",
-            fontSize: 22,
-            color: C.sacredGold,
-            textAlign: "center",
-            marginTop: spacing.s,
-          }}
-        >
-          Prayer Categories
-        </Text>
-        <Text
-          style={{
-            fontFamily: "serif",
-            fontStyle: "italic",
-            fontSize: 13,
-            color: C.textSecondary,
-            textAlign: "center",
-            marginBottom: spacing.m,
-          }}
-        >
-          Timeless prayers for every season of life
-        </Text>
-
-        <View style={{ paddingHorizontal: spacing.m, gap: spacing.xs }}>
-          {CATEGORIES.map(({ label, slug }) => (
-            <Pressable
-              key={slug}
-              onPress={() => router.push(`/prayers/${slug}`)}
-              style={({ pressed }) => ({
-                flexDirection: "row",
-                alignItems: "center",
-                borderColor: C.hairline,
-                borderWidth: 1,
-                borderRadius: radii.m,
-                paddingVertical: spacing.m,
-                paddingHorizontal: spacing.m,
-                backgroundColor: pressed ? C.surface : C.surfaceElevated,
-              })}
-            >
-              <MaterialCommunityIcons
-                name="cross"
-                size={16}
-                color={C.sacredGold}
-                style={{ marginRight: spacing.s }}
-              />
-              <Text
-                style={{
-                  color: C.textPrimary,
-                  flex: 1,
-                  fontFamily: "serif",
-                  fontSize: 15,
-                }}
-              >
-                {label}
-              </Text>
-              <MaterialCommunityIcons name="chevron-right" size={20} color={C.sacredGold} />
-            </Pressable>
-          ))}
-        </View>
-
-        <View style={{ alignItems: "center", marginTop: spacing.m, marginBottom: spacing.s }}>
-          <Pressable
-            style={({ pressed }) => ({
-              paddingVertical: spacing.s,
-              paddingHorizontal: spacing.xl,
-              borderRadius: radii.pill,
-              borderColor: C.sacredGold,
-              borderWidth: 1,
-              opacity: pressed ? 0.7 : 1,
-            })}
-          >
-            <Text style={{ color: C.sacredGold, fontFamily: "serif", fontWeight: "600" }}>
-              More
-            </Text>
+    <ManuscriptScroll inTabs margin={showMargin ? aside : undefined}>
+      <Text style={{ textAlign: "center" }}>
+        <SmallCaps color={C.ink2} size={17}>
+          {formatCivilDate(today)}
+        </SmallCaps>
+      </Text>
+      <Ornament />
+      <SmallCaps>Today’s prayer</SmallCaps>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 14, marginTop: 8 }}>
+        <View style={{ flex: 1 }}>
+          <DropCap text={TODAYS_PRAYER} />
+          <Pressable onPress={() => router.push("/prayers/morning-prayer-grant-me" as never)} style={{ minHeight: 44, justifyContent: "center" }}>
+            <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Read the prayer ›</Text>
           </Pressable>
         </View>
+        <SaintPlate
+          name={saintName}
+          season={seasonName}
+          loading={dayQuery.isLoading && !dayQuery.data}
+          failed={dayQuery.isError && !dayQuery.data}
+          onRetry={() => dayQuery.refetch()}
+        />
+      </View>
 
-        <CrossDivider style={{ marginHorizontal: spacing.m, marginTop: spacing.m }} />
+      {!showMargin ? (
+        <>
+          <Ornament />
+          {aside}
+        </>
+      ) : (
+        <Ornament />
+      )}
 
-        {/* More for You */}
+      <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
+        <SmallCaps>Today’s hours</SmallCaps>
         <Text
-          style={{
-            fontFamily: "serif",
-            fontWeight: "700",
-            fontSize: 20,
-            color: C.sacredGold,
-            textAlign: "center",
-            marginVertical: spacing.s,
-          }}
+          accessibilityLiveRegion="polite"
+          style={{ fontFamily: fonts.regular, fontSize: 16, color: C.ink2, fontVariant: ["tabular-nums"] }}
         >
-          More for You
+          {kept} of {CANONICAL_HOURS.length} prayed
         </Text>
-
-        <View
-          style={{
-            marginHorizontal: spacing.m,
-            backgroundColor: C.surfaceElevated,
-            borderRadius: radii.l,
-            borderWidth: 1,
-            borderColor: C.hairline,
-            padding: spacing.m,
-            flexDirection: "row",
-            alignItems: "center",
-          }}
-        >
-          <View
-            style={{
-              width: 56,
-              height: 70,
-              borderRadius: 8,
-              backgroundColor: C.byzantineCrimson,
-              alignItems: "center",
-              justifyContent: "center",
-              marginRight: spacing.m,
-              borderWidth: 1,
-              borderColor: C.sacredGold,
-            }}
-          >
-            <MaterialCommunityIcons name="book-cross" size={30} color={C.sacredGold} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontFamily: "serif",
-                fontWeight: "700",
-                fontSize: 16,
-                color: C.sacredGold,
-                marginBottom: 4,
-              }}
-            >
-              Share the Red Prayer Book
-            </Text>
-            <Text style={{ color: C.textSecondary, fontSize: 12, marginBottom: spacing.s }}>
-              Invite friends to get closer to ancient Christianity.
-            </Text>
+      </View>
+      <View style={{ height: 3, backgroundColor: C.rule, marginTop: 8, marginBottom: 4 }}>
+        <View style={{ width: `${(kept / CANONICAL_HOURS.length) * 100}%`, height: 3, backgroundColor: C.rubric }} />
+      </View>
+      {CANONICAL_HOURS.map((hour: CanonicalHour) => {
+        const checked = isHourKept(ymd, hour.id, checks);
+        const now = hour.id === getCurrentHour().id;
+        return (
+          <View key={hour.id} style={{ flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: C.rule, minHeight: 56 }}>
             <Pressable
-              style={({ pressed }) => ({
-                alignSelf: "flex-start",
-                paddingHorizontal: spacing.m,
-                paddingVertical: 6,
-                backgroundColor: pressed ? C.surface : C.byzantineCrimson,
-                borderRadius: radii.pill,
-                borderWidth: 1,
-                borderColor: C.sacredGold,
-              })}
+              accessibilityRole="link"
+              onPress={() => router.push(`/hours?id=${hour.id}` as never)}
+              style={({ pressed }) => ({ flex: 1, paddingVertical: 8, minHeight: 44, justifyContent: "center", backgroundColor: pressed ? C.highlight : "transparent" })}
             >
-              <Text style={{ color: C.sacredGold, fontWeight: "700", fontSize: 13 }}>
-                Share
+              <Text style={{ fontFamily: fonts.regular, fontSize: 18, color: now ? C.rubric : C.ink }}>
+                {hour.name}
+                {now ? "  ·  now" : ""}
+              </Text>
+              <Text style={{ fontFamily: fonts.italic, fontSize: 15, color: C.ink2 }} numberOfLines={1}>
+                {hour.greekName} · {hour.timeLabel}
               </Text>
             </Pressable>
-          </View>
-        </View>
-
-        <CrossDivider style={{ marginHorizontal: spacing.m, marginTop: spacing.xl }} />
-
-        {/* Badges */}
-        <Text
-          style={{
-            fontFamily: "serif",
-            fontWeight: "700",
-            fontSize: 20,
-            color: C.sacredGold,
-            textAlign: "center",
-            marginVertical: spacing.s,
-          }}
-        >
-          Badges
-        </Text>
-
-        <View
-          style={{
-            paddingHorizontal: spacing.m,
-            paddingBottom: spacing.s,
-            flexDirection: "row",
-            justifyContent: "space-between",
-          }}
-        >
-          {TOP_BADGES.map((def: BadgeDef) => (
-            <BadgeItem
-              key={def.id}
-              def={def}
-              progress={badgeProgress[def.id] ?? 0}
-              size={58}
-              onPress={() => router.push("/(tabs)/you")}
+            <HourCheck
+              checked={checked}
+              label={`Mark ${hour.name} as prayed`}
+              onToggle={() => toggleHour(ymd, hour.id)}
             />
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          </View>
+        );
+      })}
+
+      <Ornament />
+      <SmallCaps>The rule of prayer</SmallCaps>
+      <View>
+        {RULE_LINKS.map((link) => (
+          <TocRow key={link.title} title={link.title} page={link.page ?? "›"} onPress={() => router.push(link.href as never)} />
+        ))}
+      </View>
+
+      <Ornament />
+      <SmallCaps>For particular needs</SmallCaps>
+      {NEEDS.map((item) => {
+        const prayer = getPrayerBySlug(item.slug);
+        return (
+          <TocRow
+            key={item.slug}
+            title={item.title}
+            page={prayer?.bookPage ? `p. ${prayer.bookPage}` : "›"}
+            onPress={() => router.push(`/prayers/${item.slug}` as never)}
+          />
+        );
+      })}
+
+      <Pressable
+        onPress={() =>
+          Share.share({
+            message: "The Red Prayer Book — a pocket prayer book for Orthodox Christians.",
+          })
+        }
+        style={{ minHeight: 48, justifyContent: "center" }}
+      >
+        <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Share the Red Prayer Book ›</Text>
+      </Pressable>
+
+      <Ornament />
+      <SmallCaps>Badges</SmallCaps>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 8 }}>
+        {visibleBadgeDefs(badges).slice(0, 5).map((def) => (
+          <BadgeItem key={def.id} def={def} progress={badges[def.id] ?? 0} size={72} onPress={() => router.push("/you" as never)} />
+        ))}
+      </View>
+    </ManuscriptScroll>
   );
 }

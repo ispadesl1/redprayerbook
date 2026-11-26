@@ -1,190 +1,125 @@
-import { Modal, View, Text, ScrollView, Pressable } from 'react-native';
-import { colors } from '@/theme/colors';
-import { spacing } from '@/theme/spacing';
-import { getCalendarEntry, julianShift } from '@/lib/calendar';
-import type { CalendarEntry } from '@/lib/calendar';
+import { Pressable, Text, View } from "react-native";
+import { router } from "expo-router";
+import { FadeInBlock, SmallCaps } from "@/components/ui/manuscript";
+import { usePalette } from "@/hooks/usePalette";
+import { dayNotes, dayTitle, fastLines, MONTHS, WEEKDAYS, type LiturgicalDay } from "@/lib/calendar";
+import { localYmd, type CalendarStyle } from "@/lib/prefs";
+import { fonts } from "@/theme/typography";
 
 type Props = {
-  visible: boolean;
-  onClose: () => void;
-  dayInfo: { year: number; month: number; day: number } | null;
-  style: 'new' | 'old';
+  date: Date;
+  style: CalendarStyle;
+  day: LiturgicalDay | undefined;
+  loading: boolean;
+  failed: boolean;
+  textFailed?: boolean;
+  onRetry?: () => void;
 };
 
-export function DaySheet({ visible, onClose, dayInfo, style }: Props) {
-  if (!dayInfo) return null;
-  const date = julianShift(
-    new Date(dayInfo.year, dayInfo.month, dayInfo.day),
-    style
-  );
-  const entry = getCalendarEntry(date);
-  const dateLabel = date.toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+export function DayEntry({ date, style, day, loading, failed, textFailed, onRetry }: Props) {
+  const C = usePalette();
+  const heading = day ? dayTitle(day) : "";
+  const notes = day ? dayNotes(day) : "";
+  const fast = day ? fastLines(day) : null;
+  const ymd = localYmd(date);
+  const church =
+    day && style === "old"
+      ? `${WEEKDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS[date.getMonth()]} · Old Calendar ${day.churchDay} ${MONTHS[(day.churchMonth || 1) - 1]}`
+      : `${WEEKDAYS[date.getDay()]}, ${date.getDate()} ${MONTHS[date.getMonth()]}`;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <Pressable
-        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.65)' }}
-        onPress={onClose}
-      />
-      <View
-        style={{
-          backgroundColor: colors.surfaceElevated,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-          borderTopWidth: 1,
-          borderColor: colors.hairline,
-          maxHeight: '70%',
-        }}
-      >
-        <View
-          style={{
-            width: 40,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: colors.sacredGold,
-            alignSelf: 'center',
-            marginTop: 12,
-            marginBottom: 4,
-          }}
-        />
-        <ScrollView
-          contentContainerStyle={{
-            padding: spacing.l,
-            paddingBottom: spacing.xxxl,
-          }}
-        >
-          <Text
-            style={{
-              color: colors.textSecondary,
-              fontSize: 12,
-              marginBottom: 4,
-            }}
-          >
-            {dateLabel}
-          </Text>
-          <Text
-            style={{
-              fontFamily: 'serif',
-              fontWeight: '700',
-              fontSize: 22,
-              color: colors.sacredGold,
-              marginBottom: spacing.s,
-            }}
-          >
-            {entry?.title ?? 'No feast listed'}
-          </Text>
-
-          {entry?.saints?.length ? (
-            <Text
-              style={{
-                color: colors.textPrimary,
-                fontFamily: 'serif',
-                fontSize: 14,
-                marginBottom: spacing.s,
-              }}
-            >
-              {entry.saints.join(' • ')}
+    <FadeInBlock token={`${date.toDateString()}-${style}`}>
+      <View style={{ marginTop: 26, borderTopWidth: 1, borderTopColor: C.rule2, paddingTop: 18 }}>
+        <SmallCaps size={15}>{church}</SmallCaps>
+        <View style={{ minHeight: 64, marginTop: 6 }}>
+          {heading ? (
+            <Text style={{ fontFamily: fonts.medium, fontSize: 22, lineHeight: 28, color: C.ink }} numberOfLines={2}>
+              {heading}
             </Text>
-          ) : null}
-
-          {entry?.fast ? (
-            <View
-              style={{
-                alignSelf: 'flex-start',
-                paddingHorizontal: spacing.s,
-                paddingVertical: 4,
-                borderRadius: 999,
-                backgroundColor: colors.vesperPurple,
-                marginBottom: spacing.m,
-              }}
-            >
-              <Text
-                style={{
-                  color: colors.ivoryVellum,
-                  fontSize: 11,
-                  letterSpacing: 1.2,
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {entry.fast}
-              </Text>
+          ) : failed ? (
+            <Text style={{ fontFamily: fonts.medium, fontSize: 22, lineHeight: 28, color: C.ink }}>Commemorations unavailable</Text>
+          ) : (
+            <Text style={{ fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, color: C.ink2 }}>
+              {loading ? "Loading the commemorations…" : "No commemoration was listed for this day."}
+            </Text>
+          )}
+        </View>
+        {failed && !day ? (
+          <Pressable onPress={onRetry} style={{ minHeight: 44, justifyContent: "center" }}>
+            <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+          </Pressable>
+        ) : null}
+        {notes ? (
+          <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 24, color: C.ink2, marginTop: 6 }} numberOfLines={3}>
+            {notes}
+          </Text>
+        ) : null}
+        {day ? (
+          <View style={{ marginTop: 14, gap: 8 }}>
+            {fast?.title ? <Line label="Fast" value={fast.title} /> : null}
+            {fast?.detail && !fast.detail.startsWith("Abstain from") ? (
+              <Text style={{ fontFamily: fonts.italic, fontSize: 17, lineHeight: 24, color: C.ink2 }}>{fast.detail}</Text>
+            ) : null}
+            {day.abstentions.length > 0 ? <Line label="Abstain" value={day.abstentions.join(", ")} /> : null}
+            {day.tone != null ? <Line label="Tone" value={String(day.tone)} /> : null}
+            <View style={{ minHeight: 240 }}>
+              {day.readings.length === 0 ? (
+                <Text style={{ fontFamily: fonts.italic, color: C.ink2, fontSize: 16 }}>No readings were listed.</Text>
+              ) : (
+                day.readings.map((reading) => (
+                  <View key={`${reading.source}-${reading.display}`} style={{ marginTop: 8 }}>
+                    <SmallCaps size={15}>
+                      {reading.source} · {reading.display}
+                    </SmallCaps>
+                    {reading.verses.length > 0 ? (
+                      <Text style={{ fontFamily: fonts.regular, fontSize: 17, lineHeight: 26, color: C.ink, marginTop: 4 }}>
+                        {reading.verses.map((verse) => verse.content).join(" ")}
+                      </Text>
+                    ) : (
+                      <View style={{ minHeight: 26 }} />
+                    )}
+                  </View>
+                ))
+              )}
             </View>
-          ) : null}
-
-          {entry?.epistle ? (
-            <ReadingSection
-              title={`Epistle — ${entry.epistle.ref}`}
-              body={entry.epistle.text}
-            />
-          ) : null}
-          {entry?.gospel ? (
-            <ReadingSection
-              title={`Gospel — ${entry.gospel.ref}`}
-              body={entry.gospel.text}
-            />
-          ) : null}
-
-          {entry?.tone ? (
-            <Text
-              style={{
-                color: colors.textSecondary,
-                fontSize: 12,
-                marginTop: spacing.m,
-              }}
-            >
-              Tone {entry.tone} of the Week
-            </Text>
-          ) : null}
-        </ScrollView>
+            {textFailed ? (
+              <Text style={{ fontFamily: fonts.italic, color: C.ink2, fontSize: 16, marginTop: 8 }}>
+                The reading text could not be loaded.
+              </Text>
+            ) : null}
+            {day.stories.slice(0, 2).map((story) => {
+              const excerpt = story.story.length > 700 ? `${story.story.slice(0, 700).trimEnd()}…` : story.story;
+              return (
+                <View key={story.title} style={{ marginTop: 12 }}>
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={`Life of ${story.title}`}
+                    onPress={() => router.push(`/saints/${ymd}?name=${encodeURIComponent(story.title)}` as never)}
+                    style={{ minHeight: 44, justifyContent: "center" }}
+                  >
+                    <SmallCaps size={15}>{story.title}</SmallCaps>
+                  </Pressable>
+                  {excerpt ? (
+                    <Text style={{ fontFamily: fonts.regular, fontSize: 16, lineHeight: 24, color: C.ink, marginTop: 4 }}>
+                      {excerpt}
+                    </Text>
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
       </View>
-    </Modal>
+    </FadeInBlock>
   );
 }
 
-function ReadingSection({
-  title,
-  body,
-}: {
-  title: string;
-  body?: string;
-}) {
+function Line({ label, value }: { label: string; value: string }) {
+  const C = usePalette();
   return (
-    <View style={{ marginTop: 20 }}>
-      <Text
-        style={{
-          color: colors.sacredGold,
-          fontFamily: 'serif',
-          fontWeight: '700',
-          fontSize: 15,
-          marginBottom: 6,
-        }}
-      >
-        {title}
-      </Text>
-      {body ? (
-        <Text
-          style={{
-            color: colors.textPrimary,
-            fontFamily: 'serif',
-            fontStyle: 'italic',
-            fontSize: 14,
-            lineHeight: 21,
-          }}
-        >
-          {body}
-        </Text>
-      ) : null}
-    </View>
+    <Text style={{ fontFamily: fonts.regular, fontSize: 17, lineHeight: 24, color: C.ink }}>
+      <Text style={{ color: C.rubric, fontFamily: fonts.medium, fontVariant: ["small-caps"] }}>{label}  </Text>
+      {value}
+    </Text>
   );
 }

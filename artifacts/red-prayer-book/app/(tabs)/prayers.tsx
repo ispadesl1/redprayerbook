@@ -1,470 +1,159 @@
-import { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  TextInput,
-  FlatList,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { colors } from '@/theme/colors';
-import { spacing, radii, shadows } from '@/theme/spacing';
-import { PRAYER_SECTIONS, PrayerSection, Prayer } from '@/lib/prayers';
+import { useEffect, useMemo, useState } from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
+import { router } from "expo-router";
+import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { ManuscriptScroll, SmallCaps, TocRow, useFrame, useMotion } from "@/components/ui/manuscript";
+import { usePalette } from "@/hooks/usePalette";
+import { getPrayerBySlug, PRAYER_SECTIONS, type Prayer, type PrayerSection } from "@/lib/prayers";
+import { EASE_OUT, motion } from "@/theme/motion";
+import { fonts } from "@/theme/typography";
 
-const SECTION_ICONS: Record<string, string> = {
-  morning: '☀',
-  creed: '✟',
-  midday: '◎',
-  evening: '☽',
-  'church-prayers': '⛪',
-  'daily-life': '🕊',
-  'special-prayers': '✦',
-  'psalm-50': '✦',
-  'spiritual-helps': '📖',
-  confession: '🕊',
-  communion: '✦',
-  'various-occasions': '✦',
-};
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
 
-function SearchBar({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (t: string) => void;
-}) {
+function Chevron({ open }: { open: boolean }) {
+  const { reduced } = useMotion();
+  const turn = useSharedValue(open ? 1 : 0);
+  useEffect(() => {
+    turn.value = withTiming(open ? 1 : 0, { duration: reduced ? 0 : 220, easing: EASE_OUT });
+  }, [open, reduced, turn]);
+  const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 90}deg` }] }));
+  const C = usePalette();
   return (
-    <View
-      style={{
-        marginHorizontal: spacing.m,
-        marginBottom: spacing.s,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.surfaceElevated,
-        borderRadius: radii.pill,
-        borderWidth: 1,
-        borderColor: colors.hairline,
-        paddingHorizontal: spacing.m,
-        paddingVertical: spacing.xs,
-      }}
-    >
-      <Text style={{ color: colors.textMuted, marginRight: spacing.xs, fontSize: 14 }}>🔍</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder="Search prayers…"
-        placeholderTextColor={colors.textMuted}
-        style={{
-          flex: 1,
-          color: colors.textPrimary,
-          fontSize: 14,
-          fontFamily: 'serif',
-          paddingVertical: 2,
-        }}
-        returnKeyType="search"
-        clearButtonMode="while-editing"
-      />
-    </View>
+    <Animated.Text style={[{ color: C.ink2, fontSize: 16, lineHeight: 20, width: 16, fontFamily: fonts.regular }, style]}>›</Animated.Text>
   );
 }
 
-function SectionCard({
+function SectionBlock({
   section,
-  expanded,
+  index,
+  open,
   onToggle,
+  prayers,
 }: {
   section: PrayerSection;
-  expanded: boolean;
+  index: number;
+  open: boolean;
   onToggle: () => void;
+  prayers: Prayer[];
 }) {
+  const C = usePalette();
+  const { reduced } = useMotion();
   return (
-    <View
-      style={{
-        marginHorizontal: spacing.m,
-        marginBottom: spacing.s,
-        borderRadius: radii.m,
-        borderWidth: 1,
-        borderColor: colors.hairline,
-        backgroundColor: colors.surfaceElevated,
-        overflow: 'hidden',
-        ...shadows.card,
-      }}
-    >
+    <View style={{ borderBottomWidth: 1, borderBottomColor: C.rule }}>
       <Pressable
         onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
         style={({ pressed }) => ({
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: spacing.m,
-          paddingVertical: spacing.s,
-          backgroundColor: pressed
-            ? 'rgba(212,175,55,0.08)'
-            : 'transparent',
+          flexDirection: "row",
+          alignItems: "baseline",
+          gap: 10,
+          minHeight: 56,
+          paddingVertical: 14,
+          backgroundColor: pressed ? C.highlight : "transparent",
         })}
       >
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: radii.s,
-            backgroundColor: section.color + '22',
-            borderWidth: 1,
-            borderColor: section.color + '55',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: spacing.s,
-          }}
-        >
-          <Text style={{ fontSize: 18 }}>{section.icon}</Text>
-        </View>
-
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              fontFamily: 'serif',
-              fontWeight: '700',
-              fontSize: 15,
-              color: colors.sacredGold,
-              letterSpacing: 0.3,
-            }}
-          >
-            {section.title}
-          </Text>
-          <Text
-            style={{
-              fontSize: 11,
-              color: colors.textMuted,
-              marginTop: 1,
-            }}
-          >
-            {section.prayers.length} {section.prayers.length === 1 ? 'prayer' : 'prayers'}
-          </Text>
-        </View>
-
-        <Text
-          style={{
-            color: colors.sacredGold,
-            fontSize: 18,
-            marginLeft: spacing.xs,
-            transform: [{ rotate: expanded ? '90deg' : '0deg' }],
-          }}
-        >
-          ›
-        </Text>
+        <Text style={{ width: 32, color: C.rubric, fontFamily: fonts.regular, fontSize: 17 }}>{ROMAN[index] ?? ""}</Text>
+        <Text style={{ flex: 1, fontFamily: fonts.regular, fontSize: 21, color: C.ink }}>{section.title}</Text>
+        <Text style={{ color: C.ink2, fontFamily: fonts.regular, fontSize: 16, fontVariant: ["oldstyle-nums"] }}>{prayers.length}</Text>
+        <Chevron open={open} />
       </Pressable>
-
-      {expanded && (
-        <View
-          style={{
-            borderTopWidth: 1,
-            borderTopColor: colors.hairline,
-          }}
-        >
-          {section.prayers.map((prayer, idx) => (
-            <PrayerRow
+      {open ? (
+        <Animated.View entering={reduced ? undefined : FadeIn.duration(motion.accordion).easing(EASE_OUT)} style={{ paddingBottom: 8 }}>
+          {prayers.map((prayer) => (
+            <TocRow
               key={prayer.slug}
-              prayer={prayer}
-              isLast={idx === section.prayers.length - 1}
+              title={prayer.title}
+              subtitle={prayer.subtitle}
+              page={prayer.bookPage ? String(prayer.bookPage) : "›"}
+              onPress={() => router.push(`/prayers/${prayer.slug}` as never)}
             />
           ))}
-        </View>
-      )}
-    </View>
-  );
-}
-
-function PrayerRow({ prayer, isLast }: { prayer: Prayer; isLast: boolean }) {
-  const kindLabel: Record<string, string> = {
-    prayer: 'Prayer',
-    psalm: 'Psalm',
-    catechism: 'Catechism',
-    responsive: 'Responsive',
-    list: 'List',
-  };
-
-  const kindColor: Record<string, string> = {
-    prayer: colors.sacredGold,
-    psalm: colors.vesperPurple,
-    catechism: colors.liturgicalGreen,
-    responsive: colors.iconGold,
-    list: colors.silverGleam,
-  };
-
-  return (
-    <Pressable
-      onPress={() => router.push(`/prayers/${prayer.slug}` as any)}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: spacing.m,
-        paddingVertical: spacing.s,
-        backgroundColor: pressed ? 'rgba(212,175,55,0.06)' : 'transparent',
-        borderBottomWidth: isLast ? 0 : 1,
-        borderBottomColor: 'rgba(212,175,55,0.1)',
-      })}
-    >
-      <View style={{ flex: 1, paddingLeft: spacing.xs }}>
-        <Text
-          style={{
-            fontFamily: 'serif',
-            fontSize: 14,
-            color: colors.textPrimary,
-            fontWeight: '600',
-          }}
-        >
-          {prayer.title}
-        </Text>
-        {prayer.subtitle ? (
-          <Text
-            style={{
-              fontSize: 11,
-              color: colors.textMuted,
-              marginTop: 1,
-              fontStyle: 'italic',
-            }}
-          >
-            {prayer.subtitle}
-          </Text>
-        ) : null}
-      </View>
-
-      <View
-        style={{
-          backgroundColor: (kindColor[prayer.kind] ?? colors.sacredGold) + '22',
-          borderRadius: radii.pill,
-          paddingHorizontal: 7,
-          paddingVertical: 2,
-          marginLeft: spacing.xs,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 10,
-            color: kindColor[prayer.kind] ?? colors.sacredGold,
-            fontWeight: '600',
-          }}
-        >
-          {kindLabel[prayer.kind] ?? prayer.kind}
-        </Text>
-      </View>
-
-      <Text style={{ color: colors.textMuted, marginLeft: spacing.xs, fontSize: 14 }}>›</Text>
-    </Pressable>
-  );
-}
-
-function SearchResults({ query }: { query: string }) {
-  const q = query.toLowerCase().trim();
-  if (!q) return null;
-
-  const results: Array<{ prayer: Prayer; sectionTitle: string }> = [];
-  for (const section of PRAYER_SECTIONS) {
-    for (const prayer of section.prayers) {
-      if (
-        prayer.title.toLowerCase().includes(q) ||
-        (prayer.subtitle ?? '').toLowerCase().includes(q) ||
-        (prayer.text ?? '').toLowerCase().includes(q) ||
-        (prayer.items ?? []).join(' ').toLowerCase().includes(q)
-      ) {
-        results.push({ prayer, sectionTitle: section.title });
-      }
-    }
-  }
-
-  if (results.length === 0) {
-    return (
-      <View
-        style={{
-          marginHorizontal: spacing.m,
-          marginTop: spacing.xl,
-          alignItems: 'center',
-        }}
-      >
-        <Text style={{ color: colors.textMuted, fontStyle: 'italic', fontSize: 14 }}>
-          No prayers found for "{query}"
-        </Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={{ marginHorizontal: spacing.m }}>
-      <Text
-        style={{
-          fontSize: 11,
-          color: colors.textMuted,
-          marginBottom: spacing.s,
-          letterSpacing: 0.5,
-        }}
-      >
-        {results.length} result{results.length !== 1 ? 's' : ''}
-      </Text>
-      {results.map(({ prayer, sectionTitle }) => (
-        <Pressable
-          key={prayer.slug}
-          onPress={() => router.push(`/prayers/${prayer.slug}` as any)}
-          style={({ pressed }) => ({
-            backgroundColor: pressed
-              ? 'rgba(212,175,55,0.08)'
-              : colors.surfaceElevated,
-            borderRadius: radii.m,
-            borderWidth: 1,
-            borderColor: colors.hairline,
-            padding: spacing.s,
-            marginBottom: spacing.xs,
-            flexDirection: 'row',
-            alignItems: 'center',
-          })}
-        >
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{
-                fontFamily: 'serif',
-                fontWeight: '700',
-                fontSize: 14,
-                color: colors.sacredGold,
-              }}
-            >
-              {prayer.title}
-            </Text>
-            <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
-              {sectionTitle}
-            </Text>
-          </View>
-          <Text style={{ color: colors.textMuted, fontSize: 14 }}>›</Text>
-        </Pressable>
-      ))}
+        </Animated.View>
+      ) : null}
     </View>
   );
 }
 
 export default function Prayers() {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['morning'])
+  const C = usePalette();
+  const { showMargin } = useFrame();
+  const [query, setQuery] = useState("");
+  const [openId, setOpenId] = useState<string | null>(PRAYER_SECTIONS[0]?.id ?? null);
+  const needle = query.trim().toLowerCase();
+
+  const sections = useMemo(
+    () =>
+      PRAYER_SECTIONS.map((section, index) => ({
+        section,
+        index,
+        prayers: section.prayers.filter((prayer) => {
+          if (!needle) return true;
+          return `${prayer.title} ${prayer.subtitle ?? ""}`.toLowerCase().includes(needle);
+        }),
+      })).filter((item) => item.prayers.length > 0),
+    [needle],
   );
-  const [searchQuery, setSearchQuery] = useState('');
 
-  const toggleSection = useCallback((id: string) => {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
+  const said = ["morning-trisagion", "jesus-prayer", "evening-trisagion"]
+    .map((slug) => getPrayerBySlug(slug))
+    .filter((prayer): prayer is Prayer => !!prayer);
 
-  const isSearching = searchQuery.trim().length > 0;
-
-  return (
-    <SafeAreaView
-      edges={['top']}
-      style={{ flex: 1, backgroundColor: colors.surfaceDeep }}
-    >
-      <View
-        style={{
-          paddingHorizontal: spacing.m,
-          paddingTop: spacing.s,
-          paddingBottom: spacing.xs,
-          borderBottomColor: colors.hairline,
-          borderBottomWidth: 1,
-          backgroundColor: colors.surface,
-        }}
-      >
-        <Text
-          style={{
-            fontFamily: 'serif',
-            fontWeight: '700',
-            fontSize: 22,
-            color: colors.sacredGold,
-            letterSpacing: 1.5,
-            textAlign: 'center',
-            marginBottom: spacing.xs,
-          }}
-        >
-          ✟  Prayer Book  ✟
-        </Text>
-        <Text
-          style={{
-            fontFamily: 'serif',
-            fontStyle: 'italic',
-            fontSize: 11,
-            color: colors.textMuted,
-            textAlign: 'center',
-            marginBottom: spacing.s,
-            letterSpacing: 0.5,
-          }}
-        >
-          A Pocket Prayer Book for Orthodox Christians
-        </Text>
-      </View>
-
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingTop: spacing.m, paddingBottom: spacing.xxxl }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <SearchBar value={searchQuery} onChange={setSearchQuery} />
-
-        {isSearching ? (
-          <SearchResults query={searchQuery} />
-        ) : (
-          <>
-            <GoldDivider />
-            {PRAYER_SECTIONS.map((section) => (
-              <SectionCard
-                key={section.id}
-                section={section}
-                expanded={expandedSections.has(section.id)}
-                onToggle={() => toggleSection(section.id)}
-              />
-            ))}
-          </>
-        )}
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-function GoldDivider() {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginHorizontal: spacing.m,
-        marginBottom: spacing.m,
-      }}
-    >
-      <View
-        style={{
-          flex: 1,
-          height: 1,
-          backgroundColor: colors.hairline,
-        }}
-      />
-      <Text
-        style={{
-          color: colors.sacredGold,
-          fontSize: 12,
-          marginHorizontal: spacing.s,
-          opacity: 0.7,
-        }}
-      >
-        ✦
-      </Text>
-      <View
-        style={{
-          flex: 1,
-          height: 1,
-          backgroundColor: colors.hairline,
-        }}
-      />
+  const margin = (
+    <View>
+      <SmallCaps>Said today</SmallCaps>
+      {said.map((prayer) => (
+        <TocRow
+          key={prayer.slug}
+          title={prayer.title}
+          subtitle={prayer.subtitle}
+          page={prayer.bookPage ? String(prayer.bookPage) : "›"}
+          onPress={() => router.push(`/prayers/${prayer.slug}` as never)}
+        />
+      ))}
+      <Pressable onPress={() => router.push("/book" as never)} style={{ minHeight: 48, justifyContent: "center", marginTop: 12 }}>
+        <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Open the printed book ›</Text>
+      </Pressable>
     </View>
+  );
+
+  return (
+    <ManuscriptScroll inTabs margin={showMargin ? margin : undefined}>
+      <Text style={{ fontFamily: fonts.medium, fontSize: 34, lineHeight: 40, color: C.ink, textAlign: "center" }}>
+        The Prayer Book
+      </Text>
+      <Text style={{ fontFamily: fonts.italic, fontSize: 17, color: C.ink2, textAlign: "center", marginTop: 6 }}>
+        {PRAYER_SECTIONS.reduce((sum, section) => sum + section.prayers.length, 0)} prayers in {PRAYER_SECTIONS.length} parts
+      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: C.ink2, minHeight: 48, marginTop: 18, marginBottom: 8 }}>
+        <Text style={{ color: C.ink2, marginRight: 8, fontSize: 16, fontFamily: fonts.regular, lineHeight: 20 }}>⌕</Text>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search the prayers"
+          placeholderTextColor={C.ink2}
+          accessibilityLabel="Search prayers"
+          style={{ flex: 1, fontFamily: fonts.regular, fontSize: 19, lineHeight: 26, color: C.ink, minHeight: 44, paddingVertical: 8 }}
+          autoCorrect={false}
+        />
+      </View>
+      {sections.length === 0 ? (
+        <Text style={{ fontFamily: fonts.italic, fontSize: 18, color: C.ink2, paddingVertical: 28 }}>
+          Nothing in the book matches “{query.trim()}”.
+        </Text>
+      ) : (
+        sections.map(({ section, index, prayers }) => (
+          <SectionBlock
+            key={section.id}
+            section={section}
+            index={index}
+            prayers={prayers}
+            open={!!needle || openId === section.id}
+            onToggle={() => setOpenId((current) => (current === section.id ? null : section.id))}
+          />
+        ))
+      )}
+      {!showMargin ? <View style={{ marginTop: 28 }}>{margin}</View> : null}
+    </ManuscriptScroll>
   );
 }

@@ -1,120 +1,74 @@
-import { ScrollView, View, Text, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, router } from 'expo-router';
-import { CrossDivider } from '@/components/ui/CrossDivider';
-import { colors } from '@/theme/colors';
-import { spacing, radii } from '@/theme/spacing';
+import { Pressable, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { ManuscriptScroll, Ornament, ReadingText, SmallCaps, StackBar } from "@/components/ui/manuscript";
+import { useLiturgicalDay } from "@/hooks/useCalendarData";
+import { usePalette } from "@/hooks/usePalette";
+import { commemorationLabel, lifeForName, saintOfTheDay, CALENDAR_CREDIT, MONTHS } from "@/lib/calendar";
+import { usePrefs } from "@/lib/prefs";
+import { fonts } from "@/theme/typography";
 
-const SAINTS: Record<string, { name: string; feast: string; life: string }> = {
-  'nicholas': {
-    name: 'Saint Nicholas the Wonderworker',
-    feast: 'December 6 / 19',
-    life: `Saint Nicholas was born in the city of Patara in the province of Lycia in Asia Minor. His wealthy parents, who raised him in piety and virtue, reposed after a short illness, leaving their child in the hands of God.
-
-The uncle of Saint Nicholas, Bishop Nicholas of Patara, seeing that his nephew was given over to continual prayer and study of the Holy Scripture, tonsured him a reader, and then ordained him a presbyter.
-
-Saint Nicholas performed many miracles throughout his life, providing for the poor in secret, defending the innocent, and calming storms at sea. He reposed peacefully in old age, and his relics were found to be incorrupt.`,
-  },
-};
+function dateFromId(id: string | undefined): Date {
+  if (id && /^\d{4}-\d{2}-\d{2}$/.test(id)) {
+    const [year, month, day] = id.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date();
+}
 
 export default function SaintDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const saint = SAINTS[id ?? 'nicholas'] ?? SAINTS['nicholas'];
+  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
+  const C = usePalette();
+  const style = usePrefs((state) => state.calendarStyle);
+  const date = dateFromId(id);
+  const dayQuery = useLiturgicalDay(date, style);
+  const day = dayQuery.data;
+  const requested = (typeof name === "string" ? name : "").trim() || (day ? saintOfTheDay(day) : "");
+  const life = day && requested ? lifeForName(day.stories, requested) : null;
+  const loading = dayQuery.isLoading && !day;
+  const failed = dayQuery.isError && !day;
+  const heading = life?.title || requested || "This commemoration";
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.surfaceDeep }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: spacing.m,
-          paddingVertical: spacing.s,
-        }}
-      >
-        <Pressable onPress={() => router.back()} style={{ marginRight: spacing.m }}>
-          <Text style={{ color: colors.sacredGold, fontSize: 24 }}>‹</Text>
-        </Pressable>
-        <Text
-          style={{
-            fontFamily: 'serif',
-            fontWeight: '700',
-            fontSize: 18,
-            color: colors.ivoryVellum,
-            flex: 1,
-          }}
-        >
-          Lives of the Saints
-        </Text>
-      </View>
-
-      <CrossDivider />
-
-      <ScrollView
-        contentContainerStyle={{ padding: spacing.m, paddingBottom: spacing.xxxl }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View
-          style={{
-            alignItems: 'center',
-            marginBottom: spacing.l,
-          }}
-        >
-          <View
-            style={{
-              width: 100,
-              height: 100,
-              borderRadius: 50,
-              borderWidth: 2,
-              borderColor: colors.sacredGold,
-              backgroundColor: colors.byzantineCrimson,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: spacing.m,
-            }}
-          >
-            <Text style={{ fontSize: 40 }}>☦</Text>
+    <View style={{ flex: 1, backgroundColor: C.paper }}>
+      <StackBar title="Lives of the Saints" onBack={() => router.back()} />
+      <ManuscriptScroll>
+        <SmallCaps>{requested ? commemorationLabel(requested) : "Saint of the day"}</SmallCaps>
+        <SmallCaps>
+          {date.getDate()} {MONTHS[date.getMonth()]} {date.getFullYear()}
+        </SmallCaps>
+        <Text style={{ fontFamily: fonts.medium, fontSize: 32, lineHeight: 38, color: C.ink, marginTop: 8 }}>{heading}</Text>
+        {loading ? (
+          <Text style={{ fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, color: C.ink2, marginTop: 16 }}>
+            Loading the life…
+          </Text>
+        ) : null}
+        {failed ? (
+          <View style={{ marginTop: 16 }}>
+            <Text style={{ fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, color: C.ink2 }}>
+              The life could not be loaded from orthocal.info.
+            </Text>
+            <Pressable onPress={() => dayQuery.refetch()} style={{ minHeight: 44, justifyContent: "center" }}>
+              <Text style={{ color: C.rubric, fontFamily: fonts.regular, fontSize: 18 }}>Try again</Text>
+            </Pressable>
           </View>
-          <Text
-            style={{
-              fontFamily: 'serif',
-              fontWeight: '700',
-              fontSize: 22,
-              color: colors.sacredGold,
-              textAlign: 'center',
-            }}
-          >
-            {saint.name}
+        ) : null}
+        {!loading && !failed && life ? (
+          <>
+            <Ornament />
+            <ReadingText text={life.story} size={20} dropCap />
+            <Text style={{ fontFamily: fonts.italic, fontSize: 16, lineHeight: 24, color: C.ink2, marginTop: 22 }}>
+              {CALENDAR_CREDIT}
+            </Text>
+          </>
+        ) : null}
+        {!loading && !failed && !life ? (
+          <Text style={{ fontFamily: fonts.italic, fontSize: 18, lineHeight: 28, color: C.ink2, marginTop: 16 }}>
+            {requested
+              ? `orthocal.info did not include a life for ${requested}.`
+              : "No commemoration was listed for this day, so there is no life to show."}
           </Text>
-          <Text
-            style={{
-              color: colors.textSecondary,
-              fontSize: 13,
-              marginTop: 6,
-              letterSpacing: 1,
-              fontWeight: '600',
-              textTransform: 'uppercase',
-            }}
-          >
-            Feast Day: {saint.feast}
-          </Text>
-        </View>
-
-        <CrossDivider />
-
-        <Text
-          style={{
-            fontFamily: 'serif',
-            fontStyle: 'italic',
-            fontSize: 15,
-            color: colors.textPrimary,
-            lineHeight: 24,
-            marginTop: spacing.m,
-            textAlign: 'justify',
-          }}
-        >
-          {saint.life}
-        </Text>
-      </ScrollView>
-    </SafeAreaView>
+        ) : null}
+      </ManuscriptScroll>
+    </View>
   );
 }
